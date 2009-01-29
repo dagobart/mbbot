@@ -22,6 +22,7 @@ require 'yaml'
 class TwitterConnector
   def initialize
     @account_data = YAML::load( File.open( 'twitterbot.yaml' ) )
+#     @account_data = YAML::load( File.open( 'my-twitterbot.yaml' ) )
 
     # ensure that you're about to use non-default -- read: not known to the
     # world --  login data:
@@ -112,20 +113,46 @@ class TwitterTalk
 #     @connection.update('Just learned to get my login data from a YAML file.')
 #     @connection.update('')
   end
+
+  def get_latest_replies
+    @connection.replies(:since_id => 1158336453).collect { |reply|
+      [
+        reply.created_at,
+        reply.id,
+        reply.user.screen_name,
+        reply.text
+      ]
+    }
+  end
 end
 
 connector = TwitterConnector.new
 friending = TwitterFriending.new(connector)
+talk = TwitterTalk.new(connector)
 
-puts "friends: #{friending.friend_names.join(', ')}"
-puts "followers: #{friending.follower_names.join(', ')}"
-puts "new followers: #{friending.new_followers.join(', ')}"
-puts "lost followers: #{friending.lost_followers.join(', ')}"
+# puts "friends: #{friending.friend_names.join(', ')}"
+# puts "followers: #{friending.follower_names.join(', ')}"
+# puts "new followers: #{friending.new_followers.join(', ')}"
+# puts "lost followers: #{friending.lost_followers.join(', ')}"
 
 friending.catch_up_with_followers
 
+talk.get_latest_replies.each do |msg|
+  puts "#{msg[0]}/#{msg[1]}: #{msg[2]}: #{msg[3]}"
+end
+
+#     @connection.replies(:since_id => 1158336453).each do |s|
+#       puts "#{s.created_at}/#{s.id}: #{s.user.screen_name}: #{s.text}"
+#     end
+
 # todo:
-# + add functionality to read/post updates, use distinct class for this
-# + don't attempt to follow back any users whose accounts got seized by Twitter,
-#   such as @michellegggssee
+# + store somewhere the ID of the latest received message(s), so we won't
+#   reread them again and again
+# + add functionality to read/post updates
+# + Don't attempt to follow back any users whose accounts are under Twitter
+#   investigation, such as @michellegggssee.
+#   . a bot service that determines spam bot followers (followees?) would be
+#     nice
 # + add tests
+# @joernp: "@kratzdistel schön wäre es, wenn man benachrichtigt wird, WER entfollowed, oder? :-)"
+# + make sure that if users change their screen names, nothing is going to break

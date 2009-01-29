@@ -5,10 +5,12 @@ account:
 twitter:
   user: twitterbot
   password: secret
+  inbox_latest: 1158336453
 
 identica:
   user: identicabot
   password: secret
+  inbox_latest: 1
 
 # use YAML::Store.load():
 #
