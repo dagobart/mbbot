@@ -12,7 +12,8 @@ require('twitter')
 # Debian ruby package, you need the following:
 #
 # deb: ruby-dev => mkmf
-# gem: echoe => fix rubygems
+# gem: twitter => core gem
+#      echoe => fix rubygems
 #
 #
 # Note: Before you can exec any Twitter interactions through your bot, you
@@ -80,3 +81,7 @@ puts 'lost followers:', bot.lost_followers
 
 bot.catch_up_with_followers
 bot.leave('michellegggssee')
+
+# todo:
+# + add reading auth data from config file, so check-in/-out becomes less a hassle
+# + add functionality to read/post updates, use distinct class for this
