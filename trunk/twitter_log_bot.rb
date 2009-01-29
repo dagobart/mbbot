@@ -1,6 +1,7 @@
 require 'rubygems'
 gem('twitter', '>=0.4.1')
-require('twitter')
+require 'twitter'
+require 'yaml'
 
 # After tons of hassles with disrupted Ruby/Rails/RubyGems installations --
 # http://is.gd/hvM9 -- I gave in an gave another Debian Ruby/Rails a try, that
@@ -17,13 +18,29 @@ require('twitter')
 #
 #
 # Note: Before you can exec any Twitter interactions through your bot, you
-# need to replace +logbot+ and +botpassword+ below with a valid combination.
+# need to update +twitterbot.yaml+ with a valid credentials.
 #
 class TwitterLogBot
   def initialize
-    @bot = Twitter::Base.new('logbot', 'botpassword')
-#     @bot.update('Now also learned how to auto-leave lost followers.')
+    @account_data = YAML::load( File.open( 'twitterbot.yaml' ) )
+    @bot = Twitter::Base.new(user, password)
+#     @bot.update('Just learned to get my login data from a YAML file.')
   end
+
+
+#   protected
+  def service_in_use
+    @account_data['account']['service']
+  end
+
+  def user
+    @account_data[service_in_use]['user']
+  end
+
+  def password
+    @account_data[service_in_use]['password']
+  end
+  public
 
   def catch_up_with_followers
     # follow back everyone we don't [follow back] yet:
@@ -74,14 +91,20 @@ end
 
 bot = TwitterLogBot.new
 
-puts 'friends:', bot.friend_names
-puts 'followers:', bot.follower_names
-puts 'new followers:', bot.new_followers
-puts 'lost followers:', bot.lost_followers
+puts "service_in_use: #{bot.service_in_use}"
+puts "user: #{bot.user}"
+# puts "password: #{bot.password}"
+exit if bot.password == 'secret'
+
+puts "friends: #{bot.friend_names.join(', ')}"
+puts "followers: #{bot.follower_names.join(', ')}"
+puts "new followers: #{bot.new_followers.join(', ')}"
+puts "lost followers: #{bot.lost_followers.join(', ')}"
 
 bot.catch_up_with_followers
-bot.leave('michellegggssee')
 
 # todo:
 # + add reading auth data from config file, so check-in/-out becomes less a hassle
 # + add functionality to read/post updates, use distinct class for this
+# + don't attempt to follow back any users whoseaccounts got seized by Twitter,
+#   such as @michellegggssee
