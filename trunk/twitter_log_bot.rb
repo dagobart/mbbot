@@ -15,12 +15,11 @@ require 'yaml'
 # deb: ruby-dev => mkmf
 # gem: twitter => core gem
 #      echoe => fix rubygems
+
+# Note: Before you can exec any Twitter interactions through the connection,
+# you need to update +twitterbot.yaml+ with valid credentials.
 #
-#
-# Note: Before you can exec any Twitter interactions through your bot, you
-# need to update +twitterbot.yaml+ with a valid credentials.
-#
-class TwitterLogBot
+class TwitterConnector
   def initialize
     @account_data = YAML::load( File.open( 'twitterbot.yaml' ) )
 
@@ -31,11 +30,13 @@ class TwitterLogBot
            "Please, use a serious password (or some other config but twitterbot.yaml)!"
     end
 
-    @bot = Twitter::Base.new(user, password)
-#     @bot.update('Just learned to get my login data from a YAML file.')
+    @connection = Twitter::Base.new(user, password)
   end
 
-  protected
+  attr_reader :connection
+
+  # Currently, Twitter alternatives don't actually get used; +service_in_use+
+  # is only about what the config file says.
   def service_in_use
     @account_data['account']['service']
   end
@@ -47,7 +48,12 @@ class TwitterLogBot
   def password
     @account_data[service_in_use]['password']
   end
-  public
+end
+
+class TwitterFriending
+  def initialize(connector)
+    @connection = connector.connection
+  end
 
   def catch_up_with_followers
     # follow back everyone we don't [follow back] yet:
@@ -64,13 +70,13 @@ class TwitterLogBot
   end
 
   def follow(user_screen_name)
-    @bot.create_friendship(user_screen_name)
-    @bot.follow(user_screen_name)
+    @connection.create_friendship(user_screen_name)
+    @connection.follow(user_screen_name)
   end
 
   def leave(user_screen_name)
-    @bot.leave(user_screen_name)
-    @bot.destroy_friendship(user_screen_name)
+    @connection.leave(user_screen_name)
+    @connection.destroy_friendship(user_screen_name)
   end
 
   def new_followers
@@ -83,29 +89,43 @@ class TwitterLogBot
 
   def follower_names
     result = []
-    @bot.followers.collect { |follower| result << follower.screen_name }
+    @connection.followers.collect { |follower| result << follower.screen_name }
 
     return result
   end
 
   def friend_names
     result = []
-    @bot.friends.collect { |friend| result << friend.screen_name }
+    @connection.friends.collect { |friend| result << friend.screen_name }
 
     return result
   end
+
+  def user_names(users)
+    users.collect { |user| user.screen_name }
+  end
 end
 
-bot = TwitterLogBot.new
+class TwitterTalk
+  def initialize(connector)
+    @connection = connector.connection
+#     @connection.update('Just learned to get my login data from a YAML file.')
+#     @connection.update('')
+  end
+end
 
-puts "friends: #{bot.friend_names.join(', ')}"
-puts "followers: #{bot.follower_names.join(', ')}"
-puts "new followers: #{bot.new_followers.join(', ')}"
-puts "lost followers: #{bot.lost_followers.join(', ')}"
+connector = TwitterConnector.new
+friending = TwitterFriending.new(connector)
 
-bot.catch_up_with_followers
+puts "friends: #{friending.friend_names.join(', ')}"
+puts "followers: #{friending.follower_names.join(', ')}"
+puts "new followers: #{friending.new_followers.join(', ')}"
+puts "lost followers: #{friending.lost_followers.join(', ')}"
+
+friending.catch_up_with_followers
 
 # todo:
 # + add functionality to read/post updates, use distinct class for this
 # + don't attempt to follow back any users whose accounts got seized by Twitter,
 #   such as @michellegggssee
+# + add tests
