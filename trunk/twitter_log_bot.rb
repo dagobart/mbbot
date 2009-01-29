@@ -23,12 +23,19 @@ require 'yaml'
 class TwitterLogBot
   def initialize
     @account_data = YAML::load( File.open( 'twitterbot.yaml' ) )
+
+    # ensure that you're about to use non-default -- read: not known to the
+    # world --  login data:
+    if (password == 'secret')
+      raise StandardError,
+           "Please, use a serious password (or some other config but twitterbot.yaml)!"
+    end
+
     @bot = Twitter::Base.new(user, password)
 #     @bot.update('Just learned to get my login data from a YAML file.')
   end
 
-
-#   protected
+  protected
   def service_in_use
     @account_data['account']['service']
   end
@@ -91,11 +98,6 @@ end
 
 bot = TwitterLogBot.new
 
-puts "service_in_use: #{bot.service_in_use}"
-puts "user: #{bot.user}"
-# puts "password: #{bot.password}"
-exit if bot.password == 'secret'
-
 puts "friends: #{bot.friend_names.join(', ')}"
 puts "followers: #{bot.follower_names.join(', ')}"
 puts "new followers: #{bot.new_followers.join(', ')}"
@@ -104,7 +106,6 @@ puts "lost followers: #{bot.lost_followers.join(', ')}"
 bot.catch_up_with_followers
 
 # todo:
-# + add reading auth data from config file, so check-in/-out becomes less a hassle
 # + add functionality to read/post updates, use distinct class for this
-# + don't attempt to follow back any users whoseaccounts got seized by Twitter,
+# + don't attempt to follow back any users whose accounts got seized by Twitter,
 #   such as @michellegggssee
