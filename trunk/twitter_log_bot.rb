@@ -4,10 +4,10 @@ require 'twitter'
 require 'yaml'
 
 # After tons of hassles with disrupted Ruby/Rails/RubyGems installations --
-# http://is.gd/hvM9 -- I gave in an gave another Debian Ruby/Rails a try, that
-# is Debian Lenny's Ruby. Currently -- that is just before release of Debian
-# Lenny -- if not perfect, it looks usable. I hope backports.org will keep us
-# up to date with Ruby/Rails/RubyGems once Lenny's released.
+# http://is.gd/hvM9 -- I gave in and gave another Debian Ruby/Rails a try,
+# that is Debian Lenny's Ruby. Currently -- that is just before release of
+# Debian Lenny -- if not perfect, it looks usable. I hope backports.org will
+# keep us up to date with Ruby/Rails/RubyGems once Lenny's released.
 #
 # To get this here Twitter bot up and running, additionally to the default
 # Debian ruby package, you need the following:
@@ -21,8 +21,8 @@ require 'yaml'
 #
 class TwitterConnector
   def initialize
-    @account_data = YAML::load( File.open( 'twitterbot.yaml' ) )
-#     @account_data = YAML::load( File.open( 'my-twitterbot.yaml' ) )
+#    @account_data = YAML::load( File.open( 'twitterbot.yaml' ) )
+    @account_data = YAML::load( File.open( 'my-twitterbot.yaml' ) )
 
     # ensure that you're about to use non-default -- read: not known to the
     # world --  login data:
@@ -108,14 +108,40 @@ class TwitterFriending
 end
 
 class TwitterTalk
+  LATEST_TWEED_ID_PERSISTENCY_FILE = 'latest_tweeds.yaml'
+  # Note:
+  # Instead of reusing twitterbot.yaml, we currently use latest_tweeds.yaml
+  # to persist the ID of the latest received tweed. Reason for not reusing
+  # the twitterbot.yaml file is the risk of accidentally kill that file, thus
+  # the login credentials as well.
+  #
+  # If you've got an idea how to improve the latest tweed ID storage, please
+  # let me know. -- @dagobart/20090129
   def initialize(connector)
     @connection = connector.connection
-#     @connection.update('Just learned to get my login data from a YAML file.')
+    @latest_tweeds = YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
+#     @connection.update('Just learned how to make the ID of the latest processed received message sticky (persistent).')
 #     @connection.update('')
   end
 
+  def shutdown
+#     self.twitter_latest_received = (1158336453 + 5)
+    yaml_file = File.open( LATEST_TWEED_ID_PERSISTENCY_FILE, 'w' )
+    yaml_file.write(@latest_tweeds.to_yaml)
+    yaml_file.close
+  end
+
+  def twitter_latest_received
+    @latest_tweeds['inbox_latest']['twitter']
+  end
+
+  def twitter_latest_received=(new_latest_ID)
+    @latest_tweeds['inbox_latest']['twitter'] = new_latest_ID
+  end
+
   def get_latest_replies
-    @connection.replies(:since_id => 1158336453).collect { |reply|
+#     @connection.replies(:since_id => 1158336453).collect { |reply|
+    @connection.replies(:since_id => twitter_latest_received).collect { |reply|
       [
         reply.created_at,
         reply.id,
@@ -141,6 +167,7 @@ talk.get_latest_replies.each do |msg|
   puts "#{msg[0]}/#{msg[1]}: #{msg[2]}: #{msg[3]}"
 end
 
+talk.shutdown
 #     @connection.replies(:since_id => 1158336453).each do |s|
 #       puts "#{s.created_at}/#{s.id}: #{s.user.screen_name}: #{s.text}"
 #     end
@@ -154,5 +181,4 @@ end
 #   . a bot service that determines spam bot followers (followees?) would be
 #     nice
 # + add tests
-# @joernp: "@kratzdistel schön wäre es, wenn man benachrichtigt wird, WER entfollowed, oder? :-)"
 # + make sure that if users change their screen names, nothing is going to break
