@@ -134,6 +134,23 @@ class TwitterMessagingIO
     @connection.update(msg)
   end
 
+  # chances are that Twitter needs both pieces of data, in_reply_to_status_id
+  # and in_reply_to_user_id to get the message threading right. (You can
+  # verify that by having a look at the look of the bot's replies within its
+  # Twitter web page: If there's a "in reply to" threading got through, i.e.
+  # got applied -- otherwise not.)
+  def reply(msg, in_reply_to_status_id = nil, in_reply_to_user_id = nil)
+    if in_reply_to_status_id && in_reply_to_user_id then
+      @connection.update(msg, {
+      				:in_reply_to_status_id => in_reply_to_status_id,
+        			  :in_reply_to_user_id => in_reply_to_user_id
+      			      }
+      			)
+    else
+      say(msg)
+    end
+  end
+
   def shutdown
     yaml_file = File.open( LATEST_TWEED_ID_PERSISTENCY_FILE, 'w' )
     yaml_file.write(@latest_tweeds.to_yaml)
@@ -158,7 +175,7 @@ class TwitterMessagingIO
     latest_message_id = self.twitter_latest_received
 
       latest_replies = @connection.replies(:since_id => latest_message_id).collect do |reply|
-        # reply.pretty_inspect
+#         puts reply.pretty_inspect
 
         # take side-note(s):
         id = reply.id.to_i
@@ -169,7 +186,8 @@ class TwitterMessagingIO
            'created_at' => reply.created_at,
                    'id' => id,
           'screen_name' => reply.user.screen_name,
-                 'text' => reply.text
+                 'text' => reply.text,
+              'user_id' => reply.user.id
         }
       end
 
@@ -194,27 +212,39 @@ class TwitterBot
   end
 
   def operate
-#     @talk.say "Prior to perform the second echo test, I want to figure out how to reply to a /certain/ message, i.e. use and keep threading intact"
+#     @talk.say "Finally learned how to make use of Twitter message threading. Had to fix a bug in the underlying libs. Now filing a bug report."
     process_latest_received
   end
 
+  # - remove +do_not_update+
   def process_latest_received
     do_not_update = false
+    do_update = true
 
-    @talk.get_latest_replies(do_not_update).each do |msg|
-#       puts "#{msg['created_at']}/#{msg['id']}: #{msg['screen_name']}: #{msg['text']}"
+    latest_replies = []
+    begin
+      latest_replies = @talk.get_latest_replies(do_update)
+    rescue Twitter::CantConnect
+      puts @connector.errmsg(Twitter::CantConnect)
+    end
+
+    latest_replies.each do |msg|
       echo_back(msg)
     end
   end
 
   # + add Pong kind of echo reply
+  # + make use of reply() rather than of puts()
+  # + use actual Twitter threading, i.e. refer to the actual message ID we're responding to
   def echo_back(msg)
     timestamp = msg['created_at']; timestamp.gsub!(/ \+0000/, '')
     text = msg['text']; text.sub!(/^@logbot\s+/, '')
-    answer = "@#{msg['screen_name']}: [echo:] On #{ timestamp } you asked me: #{ text }"
+    answer = "@#{msg['screen_name']} [echo:] On #{ timestamp } you asked me:  #{ text }"
     answer = "#{answer[1,137]}..." if answer.length > 140
-    puts answer
-#       @talk.say(answer)
+#     puts answer, msg['id'], msg['user_id']
+#     reply =
+    @talk.reply(answer, msg['id'], msg['user_id'])
+#     puts reply.pretty_inspect
   end
 
   # actually, I didn't grasp Ruby finalizing. If you do feel free to implement
