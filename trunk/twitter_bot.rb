@@ -31,7 +31,12 @@ class TwitterConnector
            "Please, use a serious password (or some other config but twitterbot.yaml)!"
     end
 
-    @connection = Twitter::Base.new(user, password)
+    if service_in_use.downcase == 'twitter' then
+      @connection = Twitter::Base.new(user, password)
+      puts "You're using Twitter. Expect glitches."
+    else # + fixme: raise error unless it's Twitter or identi.ca
+      @connection = Twitter::Base.new(user, password, :api_host => 'identi.ca/api')
+    end
   end
 
   attr_reader :connection
@@ -212,7 +217,7 @@ class TwitterBot
   end
 
   def operate
-#     @talk.say "Finally learned how to make use of Twitter message threading. Had to fix a bug in the underlying libs. Now filing a bug report."
+#     @talk.say "Just learned how to talk to identi.ca. As Twitter keeps having glitches to stay posted, you might to follow me there: http://is.gd/hQ3s"
     process_latest_received
   end
 
