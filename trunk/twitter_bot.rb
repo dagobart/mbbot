@@ -49,6 +49,11 @@ class TwitterConnector
   def password
     @account_data[service_in_use]['password']
   end
+
+  def errmsg(error)
+    return "#{service_in_use} is refusing to perform the desired action for us." if error == Twitter::CantConnect
+    "#{service_in_use} is refusing to perform the desired action for us."
+  end
 end
 
 class TwitterFriending
@@ -56,11 +61,13 @@ class TwitterFriending
     @connection = connector.connection
   end
 
+  # for some unknown reason, this method causes Twitter to hiccup in reply,
+  # i.e. answer by: 400: Bad Request (Twitter::CantConnect)
   def follower_stats
     "friends:        #{friend_names.join(', ')}\n" +
     "followers:      #{follower_names.join(', ')}\n" +
     "new followers:  #{new_followers.join(', ')}\n" +
-    "lost followers: #{lost_followers.join(', ')}"
+    "followers gone: #{lost_followers.join(', ')}"
   end
 
   def catch_up_with_followers
@@ -146,25 +153,27 @@ class TwitterMessagingIO
   # twitter_latest_received(). That's for performance: Using
   # twitter_latest_received would involve the use of several hashes rather
   # than just updating a single Fixnum.
-  def get_latest_replies
+  def get_latest_replies(perform_latest_message_id_update = true)
 #   twitter: 1158336453
     latest_message_id = self.twitter_latest_received
 
       latest_replies = @connection.replies(:since_id => latest_message_id).collect do |reply|
+        # reply.pretty_inspect
+
         # take side-note(s):
         id = reply.id.to_i
         latest_message_id = id if (id > latest_message_id)
 
         # perform actual collect:
-        [
-          reply.created_at,
-          id,
-          reply.user.screen_name,
-          reply.text
-        ]
+        {
+           'created_at' => reply.created_at,
+                   'id' => id,
+          'screen_name' => reply.user.screen_name,
+                 'text' => reply.text
+        }
       end
 
-    self.twitter_latest_received = latest_message_id
+    self.twitter_latest_received = latest_message_id if perform_latest_message_id_update
 
     return latest_replies
   end
@@ -176,16 +185,36 @@ class TwitterBot
     @friending = TwitterFriending.new(@connector)
     @talk = TwitterMessagingIO.new(@connector)
 
-    puts @friending.follower_stats
-    @friending.catch_up_with_followers
+    begin
+      puts @friending.follower_stats
+      @friending.catch_up_with_followers
+    rescue Twitter::CantConnect
+      puts @connector.errmsg(Twitter::CantConnect)
+    end
   end
 
   def operate
-#   @talk.get_latest_replies.each do |msg|
-#     puts "#{msg[0]}/#{msg[1]}: #{msg[2]}: #{msg[3]}"
-#   end
+#     @talk.say "Prior to perform the second echo test, I want to figure out how to reply to a /certain/ message, i.e. use and keep threading intact"
+    process_latest_received
+  end
 
-#   @talk.say "Now, keeping up to date with what the latest received message was is fixed."
+  def process_latest_received
+    do_not_update = false
+
+    @talk.get_latest_replies(do_not_update).each do |msg|
+#       puts "#{msg['created_at']}/#{msg['id']}: #{msg['screen_name']}: #{msg['text']}"
+      echo_back(msg)
+    end
+  end
+
+  # + add Pong kind of echo reply
+  def echo_back(msg)
+    timestamp = msg['created_at']; timestamp.gsub!(/ \+0000/, '')
+    text = msg['text']; text.sub!(/^@logbot\s+/, '')
+    answer = "@#{msg['screen_name']}: [echo:] On #{ timestamp } you asked me: #{ text }"
+    answer = "#{answer[1,137]}..." if answer.length > 140
+    puts answer
+#       @talk.say(answer)
   end
 
   # actually, I didn't grasp Ruby finalizing. If you do feel free to implement
@@ -195,7 +224,9 @@ class TwitterBot
   end
 end
 
-TwitterBot.new.shutdown
+bot = TwitterBot.new
+bot.operate
+bot.shutdown
 
 # todo:
 # + keep the ID of the latest received message(s) up to date, so persistent
@@ -206,4 +237,11 @@ TwitterBot.new.shutdown
 #   . a bot service that determines spam bot followers (followees?) would be
 #     nice
 # + add tests
-# + make sure that if users change their screen names, nothing is going to break
+# + make sure that if users change their screen names, nothing is going to
+#   break
+# + learn to deal with errors like this: "in `handle_response!': Twitter is
+#   returning a 400: Bad Request (Twitter::CantConnect)" -- which actually
+#   can be (witnessed!) some fail whale thing at the other end, cf. commit
+#   #10, which *looked* broken because of that error, though after getting a
+#   new IP address, it was gone, ie. it indeed was a fail of Twitter, not of
+#   the bot code.
