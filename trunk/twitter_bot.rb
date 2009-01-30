@@ -21,8 +21,8 @@ require 'yaml'
 #
 class TwitterConnector
   def initialize
-#    @account_data = YAML::load( File.open( 'twitterbot.yaml' ) )
-    @account_data = YAML::load( File.open( 'my-twitterbot.yaml' ) )
+    @account_data = YAML::load( File.open( 'twitterbot.yaml' ) )
+#     @account_data = YAML::load( File.open( 'my-twitterbot.yaml' ) )
 
     # ensure that you're about to use non-default -- read: not known to the
     # world --  login data:
@@ -54,6 +54,13 @@ end
 class TwitterFriending
   def initialize(connector)
     @connection = connector.connection
+  end
+
+  def follower_stats
+    "friends:        #{friend_names.join(', ')}\n" +
+    "followers:      #{follower_names.join(', ')}\n" +
+    "new followers:  #{new_followers.join(', ')}\n" +
+    "lost followers: #{lost_followers.join(', ')}"
   end
 
   def catch_up_with_followers
@@ -89,17 +96,11 @@ class TwitterFriending
   end
 
   def follower_names
-    result = []
-    @connection.followers.collect { |follower| result << follower.screen_name }
-
-    return result
+    user_names(@connection.followers)
   end
 
   def friend_names
-    result = []
-    @connection.friends.collect { |friend| result << friend.screen_name }
-
-    return result
+    user_names(@connection.friends)
   end
 
   def user_names(users)
@@ -107,7 +108,7 @@ class TwitterFriending
   end
 end
 
-class TwitterTalk
+class TwitterMessagingIO
   LATEST_TWEED_ID_PERSISTENCY_FILE = 'latest_tweeds.yaml'
   # Note:
   # Instead of reusing twitterbot.yaml, we currently use latest_tweeds.yaml
@@ -120,12 +121,13 @@ class TwitterTalk
   def initialize(connector)
     @connection = connector.connection
     @latest_tweeds = YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
-#     @connection.update('Just learned how to make the ID of the latest processed received message sticky (persistent).')
-#     @connection.update('')
+  end
+
+  def say(msg)
+    @connection.update(msg)
   end
 
   def shutdown
-#     self.twitter_latest_received = (1158336453 + 5)
     yaml_file = File.open( LATEST_TWEED_ID_PERSISTENCY_FILE, 'w' )
     yaml_file.write(@latest_tweeds.to_yaml)
     yaml_file.close
@@ -133,48 +135,71 @@ class TwitterTalk
 
   def twitter_latest_received
     @latest_tweeds['inbox_latest']['twitter']
-  end
+  end # fixme: use connector.service_in_use
 
   def twitter_latest_received=(new_latest_ID)
     @latest_tweeds['inbox_latest']['twitter'] = new_latest_ID
-  end
+  end # fixme: use connector.service_in_use
 
+  # Note: During the collect, we do temp-store the latest received message id
+  # to a temporary storage +latest_message_id+ rather than using
+  # twitter_latest_received(). That's for performance: Using
+  # twitter_latest_received would involve the use of several hashes rather
+  # than just updating a single Fixnum.
   def get_latest_replies
-#     @connection.replies(:since_id => 1158336453).collect { |reply|
-    @connection.replies(:since_id => twitter_latest_received).collect { |reply|
-      [
-        reply.created_at,
-        reply.id,
-        reply.user.screen_name,
-        reply.text
-      ]
-    }
+#   twitter: 1158336453
+    latest_message_id = self.twitter_latest_received
+
+      latest_replies = @connection.replies(:since_id => latest_message_id).collect do |reply|
+        # take side-note(s):
+        id = reply.id.to_i
+        latest_message_id = id if (id > latest_message_id)
+
+        # perform actual collect:
+        [
+          reply.created_at,
+          id,
+          reply.user.screen_name,
+          reply.text
+        ]
+      end
+
+    self.twitter_latest_received = latest_message_id
+
+    return latest_replies
   end
 end
 
-connector = TwitterConnector.new
-friending = TwitterFriending.new(connector)
-talk = TwitterTalk.new(connector)
+class TwitterBot
+  def initialize
+    @connector = TwitterConnector.new
+    @friending = TwitterFriending.new(@connector)
+    @talk = TwitterMessagingIO.new(@connector)
 
-# puts "friends: #{friending.friend_names.join(', ')}"
-# puts "followers: #{friending.follower_names.join(', ')}"
-# puts "new followers: #{friending.new_followers.join(', ')}"
-# puts "lost followers: #{friending.lost_followers.join(', ')}"
+    puts @friending.follower_stats
+    @friending.catch_up_with_followers
+  end
 
-friending.catch_up_with_followers
+  def operate
+#   @talk.get_latest_replies.each do |msg|
+#     puts "#{msg[0]}/#{msg[1]}: #{msg[2]}: #{msg[3]}"
+#   end
 
-talk.get_latest_replies.each do |msg|
-  puts "#{msg[0]}/#{msg[1]}: #{msg[2]}: #{msg[3]}"
+#   @talk.say "Now, keeping up to date with what the latest received message was is fixed."
+  end
+
+  # actually, I didn't grasp Ruby finalizing. If you do feel free to implement
+  # a better solution than this need to call shutdown explicitly each time.
+  def shutdown
+    @talk.shutdown
+  end
 end
 
-talk.shutdown
-#     @connection.replies(:since_id => 1158336453).each do |s|
-#       puts "#{s.created_at}/#{s.id}: #{s.user.screen_name}: #{s.text}"
-#     end
+TwitterBot.new.shutdown
 
 # todo:
-# + store somewhere the ID of the latest received message(s), so we won't
-#   reread them again and again
+# + keep the ID of the latest received message(s) up to date, so persistent
+#   storing of it will work correctly.
 # + add functionality to read/post updates
 # + Don't attempt to follow back any users whose accounts are under Twitter
 #   investigation, such as @michellegggssee.
