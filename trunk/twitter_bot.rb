@@ -21,8 +21,9 @@ require 'yaml'
 #
 class TwitterConnector
   def initialize
-    @account_data = YAML::load( File.open( 'twitterbot.yaml' ) )
-#     @account_data = YAML::load( File.open( 'my-twitterbot.yaml' ) )
+    config_file = 'my-twitterbot.yaml'
+    config_file = 'twitterbot.yaml'
+    @account_data = YAML::load(File.open(config_file))
 
     # ensure that you're about to use non-default -- read: not known to the
     # world --  login data:
@@ -31,18 +32,22 @@ class TwitterConnector
            "Please, use a serious password (or some other config but twitterbot.yaml)!"
     end
 
-    if service_in_use.downcase == 'twitter' then
+    service = service_in_use.downcase
+    if service == 'twitter' then
       @connection = Twitter::Base.new(user, password)
       puts "You're using Twitter. Expect glitches."
-    else # + fixme: raise error unless it's Twitter or identi.ca
+    elsif service == 'identica'
       @connection = Twitter::Base.new(user, password, :api_host => 'identi.ca/api')
+    else
+      raise Twitter::CantConnect,
+      	   "#{config_file}: Unknown micro-blogging service provider '#{service}'. No idea how to connect to that one."
     end
+
+    @user_id = @connection.user(user).id   # ; puts @user_id; exit
   end
 
-  attr_reader :connection
+  attr_reader :connection, :user_id
 
-  # Currently, Twitter alternatives don't actually get used; +service_in_use+
-  # is only about what the config file says.
   def service_in_use
     @account_data['account']['service']
   end
@@ -131,7 +136,8 @@ class TwitterMessagingIO
   # If you've got an idea how to improve the latest tweed ID storage, please
   # let me know. -- @dagobart/20090129
   def initialize(connector)
-    @connection = connector.connection
+    @connector = connector
+    @connection = @connector.connection
     @latest_tweeds = YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
   end
 
@@ -162,26 +168,23 @@ class TwitterMessagingIO
     yaml_file.close
   end
 
-  def twitter_latest_received
-    @latest_tweeds['inbox_latest']['twitter']
-  end # fixme: use connector.service_in_use
+  def latest_message_received
+    @latest_tweeds['inbox_latest'][@connector.service_in_use]
+  end
 
-  def twitter_latest_received=(new_latest_ID)
-    @latest_tweeds['inbox_latest']['twitter'] = new_latest_ID
-  end # fixme: use connector.service_in_use
+  def latest_message_received=(new_latest_ID)
+    @latest_tweeds['inbox_latest'][@connector.service_in_use] = new_latest_ID
+  end
 
   # Note: During the collect, we do temp-store the latest received message id
   # to a temporary storage +latest_message_id+ rather than using
-  # twitter_latest_received(). That's for performance: Using
-  # twitter_latest_received would involve the use of several hashes rather
+  # latest_message_received(). That's for performance: Using
+  # latest_message_received would involve the use of several hashes rather
   # than just updating a single Fixnum.
   def get_latest_replies(perform_latest_message_id_update = true)
-#   twitter: 1158336453
-    latest_message_id = self.twitter_latest_received
+    latest_message_id = self.latest_message_received # 1st received on twitter: 1158336454
 
       latest_replies = @connection.replies(:since_id => latest_message_id).collect do |reply|
-#         puts reply.pretty_inspect
-
         # take side-note(s):
         id = reply.id.to_i
         latest_message_id = id if (id > latest_message_id)
@@ -196,7 +199,7 @@ class TwitterMessagingIO
         }
       end
 
-    self.twitter_latest_received = latest_message_id if perform_latest_message_id_update
+    self.latest_message_received = latest_message_id if perform_latest_message_id_update
 
     return latest_replies
   end
@@ -217,43 +220,57 @@ class TwitterBot
   end
 
   def operate
-#     @talk.say "Just learned how to talk to identi.ca. As Twitter keeps having glitches to stay posted, you might to follow me there: http://is.gd/hQ3s"
+    # progress_message = 'Just learned how to circumvent identi.ca\'s issue to store my messages as replies *to* me.'
+    # @talk.say(progress_message)
     process_latest_received
   end
 
-  # - remove +do_not_update+
   def process_latest_received
-    do_not_update = false
-    do_update = true
-
-    latest_replies = []
     begin
-      latest_replies = @talk.get_latest_replies(do_update)
+
+      @talk.get_latest_replies.each do |msg|
+        echo_back(msg)
+      end
+
     rescue Twitter::CantConnect
       puts @connector.errmsg(Twitter::CantConnect)
     end
-
-    latest_replies.each do |msg|
-      echo_back(msg)
-    end
   end
 
-  # + add Pong kind of echo reply
-  # + make use of reply() rather than of puts()
-  # + use actual Twitter threading, i.e. refer to the actual message ID we're responding to
+  # . Uses ~Twitter message threading, i.e. refers to the message ID we're
+  #   responding to.
+  # * On identi.ca, from its creation on, the bot account had itself as
+  #   friend and follower. Also, whatever it posts -- e.g. replies to other
+  #   users' requests -- the bot sees as replies to itself. This holds true
+  #   only for identi.ca. But this would imply: Once the bot gets running
+  #   continuously, it would deadlock itself by reacting on and replying to
+  #   its own messages over and over again. Therefore, to avoid such, this
+  #   method quits as soon as we realize we are about to talk to ourselves,
+  #   i.e. the bot is going to talk to itself.
   def echo_back(msg)
-    timestamp = msg['created_at']; timestamp.gsub!(/ \+0000/, '')
-    text = msg['text']; text.sub!(/^@logbot\s+/, '')
-    answer = "@#{msg['screen_name']} [echo:] On #{ timestamp } you asked me:  #{ text }"
-    answer = "#{answer[1,137]}..." if answer.length > 140
-#     puts answer, msg['id'], msg['user_id']
-#     reply =
-    @talk.reply(answer, msg['id'], msg['user_id'])
-#     puts reply.pretty_inspect
+        user_id = msg['user_id']; return if user_id == @connector.user_id # for identica
+    screen_name = msg['screen_name']
+         msg_id = msg['id']
+      timestamp = msg['created_at']; timestamp.gsub!(/ \+0000/, '')
+           text = msg['text'];       text.sub!(/^@logbot\s+/, '')
+
+    if text.strip.downcase == 'ping' then
+      answer = "@#{ screen_name } Pong"
+    elsif text.strip.downcase == 'ping?' then
+      answer = "@#{ screen_name } Pong!"
+    else
+      answer = "@#{ screen_name } [echo:] On #{ timestamp } you asked me:  #{ text }"
+    end
+
+    answer = "#{answer[0,136]}..." if answer.length > 140
+
+    # puts answer, msg_id, user_id
+    @talk.reply(answer, msg_id, user_id)
   end
 
-  # actually, I didn't grasp Ruby finalizing. If you do feel free to implement
-  # a better solution than this need to call shutdown explicitly each time.
+  # actually, I didn't grasp Ruby finalizing. If you do, feel free to
+  # implement a better solution than this need to call shutdown explicitly
+  # each time.
   def shutdown
     @talk.shutdown
   end
@@ -264,14 +281,12 @@ bot.operate
 bot.shutdown
 
 # todo:
-# + keep the ID of the latest received message(s) up to date, so persistent
-#   storing of it will work correctly.
-# + add functionality to read/post updates
+# + add functionality to parse/act on/answer updates
+# + add tests
 # + Don't attempt to follow back any users whose accounts are under Twitter
 #   investigation, such as @michellegggssee.
 #   . a bot service that determines spam bot followers (followees?) would be
 #     nice
-# + add tests
 # + make sure that if users change their screen names, nothing is going to
 #   break
 # + learn to deal with errors like this: "in `handle_response!': Twitter is
