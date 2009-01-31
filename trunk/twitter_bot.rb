@@ -220,7 +220,8 @@ class TwitterBot
   end
 
   def operate
-    # progress_message = 'Just learned how to circumvent identi.ca\'s issue to store my messages as replies *to* me.'
+    # progress_message = 'Just learned how to ...'
+    # progress_message = 'Due to ongoing glitches of Twitter yesterday, today I\'m going to operate on identi.ca, mainly.'
     # @talk.say(progress_message)
     process_latest_received
   end
@@ -281,8 +282,8 @@ bot.operate
 bot.shutdown
 
 # todo:
-# + add functionality to parse/act on/answer updates
 # + add tests
+# + add functionality to parse/act on/answer updates
 # + Don't attempt to follow back any users whose accounts are under Twitter
 #   investigation, such as @michellegggssee.
 #   . a bot service that determines spam bot followers (followees?) would be
