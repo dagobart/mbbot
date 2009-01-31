@@ -1,0 +1,26 @@
+account:
+  service: twitter
+
+
+twitter:
+  user: twitterbot
+  password: secret
+  inbox_latest: 1158336453
+
+identica:
+  user: identicabot
+  password: secret
+  inbox_latest: 1
+
+# use YAML::Store.load():
+#
+# yaml file contents:
+#
+#	 account:
+#	   user: twitterbot
+#	   password: secret
+#
+# irb(main):002:0> require 'yaml'
+# => true
+# irb(main):003:0> x = YAML::load( File.open( 'twitterbot.yaml' ) )
+# => {"account"=>{"password"=>"secret", "user"=>"twitterbot"}}
