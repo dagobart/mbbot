@@ -16,55 +16,70 @@ require 'yaml'
 # gem: twitter => core gem
 #      echoe => fix rubygems
 
+DEFAULT_CONFIG_FILE = 'twitterbot.yaml'
 # Note: Before you can exec any Twitter interactions through the connection,
 # you need to update +twitterbot.yaml+ with valid credentials.
 #
 class TwitterConnector
-  def initialize
-    config_file = 'my-twitterbot.yaml'
-    config_file = 'twitterbot.yaml'
+  def initialize(config_file = DEFAULT_CONFIG_FILE)
     @account_data = YAML::load(File.open(config_file))
 
-    # ensure that you're about to use non-default -- read: not known to the
-    # world --  login data:
-    if (password == 'secret')
-      raise StandardError,
-           "Please, use a serious password (or some other config but twitterbot.yaml)!"
-    end
+    # initialize read-only variables:
+       @service_in_use = @account_data['account']['service']
+             @username = @account_data[@service_in_use]['user']
+             @password = @account_data[@service_in_use]['password']
+    @use_alternative_api = @account_data[@service_in_use]['use_alternative_api']
 
-    service = service_in_use.downcase
-    if service == 'twitter' then
-      @connection = Twitter::Base.new(user, password)
-      puts "You're using Twitter. Expect glitches."
-    elsif service == 'identica'
-      @connection = Twitter::Base.new(user, password, :api_host => 'identi.ca/api')
-    else
-      raise Twitter::CantConnect,
-      	   "#{config_file}: Unknown micro-blogging service provider '#{service}'. No idea how to connect to that one."
-    end
+    # ensure we're not using twitterbot.yaml by accident:
+    assess_account_data
 
-    @user_id = @connection.user(user).id   # ; puts @user_id; exit
-  end
+      # perform actual connect:
+      if use_alternative_api? then
+        begin
+          @connection = Twitter::Base.new(@username, @password, :api_host => @use_alternative_api)
+        rescue Twitter::CantConnect
+          raise Twitter::CantConnect,
+        	   "#{config_file}: Failed to connect to micro-blogging service provider '#{@service_in_use}'."
+        end
+      else
+        @connection = Twitter::Base.new(@username, @password)
+        puts "You're using Twitter. Expect glitches."
+      end
 
-  attr_reader :connection, :user_id
+    # finish initializing read-only variables:
+    @user_id = @connection.user(@username).id   # ; puts @user_id; exit
+  end # we even could implement a reconnect()--but not that now
 
-  def service_in_use
-    @account_data['account']['service']
-  end
-
-  def user
-    @account_data[service_in_use]['user']
-  end
-
-  def password
-    @account_data[service_in_use]['password']
-  end
+  attr_reader :connection, :user_id, :use_alternative_api, :service_in_use, :username #, :password
 
   def errmsg(error)
-    return "#{service_in_use} is refusing to perform the desired action for us." if error == Twitter::CantConnect
-    "#{service_in_use} is refusing to perform the desired action for us."
+    if error == Twitter::CantConnect
+      "#{@service_in_use} is refusing to perform the desired action for us."
+    else
+      "something went wrong on #{@service_in_use} with the just before intended action."
+    end
+  end
+
+  def use_alternative_api?
+    @use_alternative_api != nil
+  end
+
+  # forces you to use non-default -- read: not known to the
+  # world --  login data
+  def assess_account_data
+    if (@password == 'secret')
+      raise StandardError,
+           "\nPlease, use a serious password (or some other config but twitterbot.yaml)!\n"
+    end
   end
 end
+
+# require 'test/unit'
+# # require 'twitter_connector'
+# class TC_TwitterConnector < Test::Unit::TestCase
+#   def test_initialize
+#   end
+# end
 
 class TwitterFriending
   def initialize(connector)
@@ -207,7 +222,7 @@ end
 
 class TwitterBot
   def initialize
-    @connector = TwitterConnector.new
+    @connector = TwitterConnector.new('my-twitterbot.yaml')
     @friending = TwitterFriending.new(@connector)
     @talk = TwitterMessagingIO.new(@connector)
 

@@ -5,12 +5,11 @@ account:
 twitter:
   user: twitterbot
   password: secret
-  inbox_latest: 1158336453
 
 identica:
   user: identicabot
   password: secret
-  inbox_latest: 1
+  use_alternative_api: 'identi.ca/api'
 
 # use YAML::Store.load():
 #
