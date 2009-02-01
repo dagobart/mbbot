@@ -41,20 +41,21 @@ class TwitterConnector
           raise Twitter::CantConnect,
         	   "#{config_file}: Failed to connect to micro-blogging service provider '#{@service_in_use}'."
         end
+        # puts "You're using #{@service_in_use}. Expect other glitches."
       else
         @connection = Twitter::Base.new(@username, @password)
-        puts "You're using Twitter. Expect glitches."
+        # puts "You're using Twitter. Expect glitches."
       end
 
     # finish initializing read-only variables:
     @user_id = @connection.user(@username).id   # ; puts @user_id; exit
-  end # we even could implement a reconnect()--but not that now
+  end # we even could implement a reconnect()--but skip that now
 
   attr_reader :connection, :user_id, :use_alternative_api, :service_in_use, :username #, :password
 
   def errmsg(error)
     if error == Twitter::CantConnect
-      "#{@service_in_use} is refusing to perform the desired action for us."
+      "#{@service_in_use} says it couldn't connect. Trans lates to: is refusing to perform the desired action for us."
     else
       "something went wrong on #{@service_in_use} with the just before intended action."
     end
@@ -74,12 +75,74 @@ class TwitterConnector
   end
 end
 
-# require 'test/unit'
-# # require 'twitter_connector'
-# class TC_TwitterConnector < Test::Unit::TestCase
-#   def test_initialize
+require 'test/unit'
+# require 'twitter_connector'
+class TC_TwitterConnector < Test::Unit::TestCase
+  def test_initialize_in_general
+    # assert false # make sure test gets executed at all
+
+    assert_raise StandardError do TwitterConnector.new end
+    assert_raise StandardError do
+      invalid_connector = TwitterConnector.new('fixtures/original-twitterbot.yaml')
+    end
+
+    assert_raise Twitter::CantConnect do
+      TwitterConnector.new('fixtures/other-enabled_with_invalid_api_URI.yaml')
+    end
+  end
+
+#   # implicitly tested yet by way of test_initialize_in_general(),
+#   # however, why not test it a second time, now explicitly:
+#   def test_assess_account_data
+#     # assert false # make sure test gets executed at all
+#     # # cannot test this as long as TwitterConnector does not
+#     # # export +password+ _and_ as _writable_ too.
 #   end
-# end
+
+  # Requires that you have a +my-twitterbot.yaml+ file in place
+  # with valid credentials for an identi.ca account.
+  # Make sure you never check in that +m-twitterbot.yaml+ file
+  # to the repository or to expose it otherwise to the public:
+  # You might get held responsible for any abuses of that account.
+  def test_initialize_twitter
+    # assert false # make sure test gets executed at all
+
+    twitter_connector = TwitterConnector.new('my-twitterbot.yaml')
+
+    assert_equal 'twitter',  twitter_connector.service_in_use
+    assert_equal 'logbot',   twitter_connector.username
+    # assert     'secret' != twitter_connector.password
+    assert_equal  nil,       twitter_connector.use_alternative_api
+    assert                  !twitter_connector.use_alternative_api?
+    assert_equal '19619847', twitter_connector.user_id
+  end
+
+  # Requires that you have a +my-identibot.yaml+ file in place
+  # with valid credentials for an identi.ca account.
+  # Make sure you never check in that +m-identibot.yaml+ file
+  # to the repository or to expose it otherwise to the public:
+  # You might get held responsible for any abuses of that account.
+  def test_initialize_identica
+    # assert false # make sure test gets executed at all
+
+    identica_connector = TwitterConnector.new('my-identibot.yaml')
+
+    assert_equal 'identica', identica_connector.service_in_use
+    assert_equal 'logbot',   identica_connector.username
+    # assert     'secret' != identica_connector.password
+    assert_equal 'identi.ca/api',
+                             identica_connector.use_alternative_api
+    assert                  identica_connector.use_alternative_api?
+    assert_equal '36999',    identica_connector.user_id
+  end
+
+  def test_errmsg
+    # assert false # make sure test gets executed at all
+
+    bot_connector = TwitterConnector.new('my-bot.yaml')
+    assert '' != bot_connector.errmsg(Twitter::CantConnect)
+  end
+end
 
 class TwitterFriending
   def initialize(connector)
@@ -111,18 +174,24 @@ class TwitterFriending
 
   def follow(user_screen_name)
     @connection.create_friendship(user_screen_name)
-    @connection.follow(user_screen_name)
+    @connection.follow(user_screen_name) # if service_implements_following
   end
 
   def leave(user_screen_name)
-    @connection.leave(user_screen_name)
+    @connection.leave(user_screen_name) # if service_implements_leaving
     @connection.destroy_friendship(user_screen_name)
   end
 
+  # Note: +user_names(@connection.followers - @connection.friends)+
+  # does not work because of different object-in-memory-addresses
+  # of follower/friend users, even if they have the same user ID.
   def new_followers
     follower_names - friend_names
   end
 
+  # Note: +user_names(@connection.friends - @connection.followers)+
+  # does not work because of different object-in-memory-addresses
+  # of follower/friend users, even if they have the same user ID.
   def lost_followers
     friend_names - follower_names
   end
@@ -213,6 +282,8 @@ class TwitterMessagingIO
               'user_id' => reply.user.id
         }
       end
+      # filter_replies if every_message_is_tagged_reply?
+      # puts latest_replies.pretty_inspect
 
     self.latest_message_received = latest_message_id if perform_latest_message_id_update
 
@@ -222,7 +293,7 @@ end
 
 class TwitterBot
   def initialize
-    @connector = TwitterConnector.new('my-twitterbot.yaml')
+    @connector = TwitterConnector.new('my-bot.yaml')
     @friending = TwitterFriending.new(@connector)
     @talk = TwitterMessagingIO.new(@connector)
 
@@ -292,9 +363,9 @@ class TwitterBot
   end
 end
 
-bot = TwitterBot.new
-bot.operate
-bot.shutdown
+# bot = TwitterBot.new
+# bot.operate
+# bot.shutdown
 
 # todo:
 # + add tests
