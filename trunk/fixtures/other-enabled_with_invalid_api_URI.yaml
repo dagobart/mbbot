@@ -3,15 +3,18 @@ account:
 
 
 twitter:
+  peer: dagobart    # testing needs a second user to bond with
   user: twitterbot
   password: 'non "secret" reading though still invalid password'
 
 identica:
+  peer: dagobart
   user: identicabot
   password: 'non "secret" reading though still invalid password'
   use_alternative_api: 'identi.ca/api'
 
 other:
+  peer: logbot
   user: otherbot
   password: 'non "secret" reading though still invalid password'
   use_alternative_api: 'localdomain.dagobart/twitterapi'

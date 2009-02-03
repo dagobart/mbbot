@@ -16,11 +16,53 @@ require 'yaml'
 # gem: twitter => core gem
 #      echoe => fix rubygems
 
-DEFAULT_CONFIG_FILE = 'twitterbot.yaml'
-# Note: Before you can exec any Twitter interactions through the connection,
-# you need to update +twitterbot.yaml+ with valid credentials.
+# Obviously, as you don't want  to be held legally responsible for any kind
+# of abusive action taken through your bot account, you don't want to share
+# your actual login data for the ~Twitter bot with the rest of us. Neither do
+# I.
+#    Hence, to the repository I check in false login data in the form of some
+# yaml files, so everyone easily can get the idea of what format the yaml
+# shall be in. On the other hand, I keep another set of yaml files that hold
+# valid login data for the bots I am using for development.
+#    As much as the next one I dislike software packages checked out somewhere
+# else only to find them disrupt. Therefore, Prior to every update to the
+# repository, I make sure the bot code refers to files that are actually
+# there even if filled with invalid data -- the latter will be pointed out by
+# mechanisms inside the bot, while the prior just leaves the inexperienced
+# clueless: "What *are* these files, that error message is talking about?"
+#    In the past, I eased the swap-in/swap-out process by having the another
+# set of yaml files named just like those checked in to the repository, with
+# the only exception that they are prepended with  a "my-".
+#    Though, still the files names were hard-coded all around. This changes
+# by now, collecting them all below.
+#    Still the advice holds true: Copy the checked in/checked out credential
+# files to some own ones, patch them to have valid credentials and make sure
+# that the names of these valid files are assigned to
+# VALID_TWITTER_CREDENTIALS__DO_NOT_CHECK_IN and
+# VALID_IDENTICA_CREDENTIALS__DO_NOT_CHECK_IN respectively.
+INVALID_TWITTER_CREDENTIALS = 'twitterbot.yaml'
+INVALID_IDENTICA_CREDENTIALS = 'identibot.yaml'
+VALID_TWITTER_CREDENTIALS__DO_NOT_CHECK_IN = 'my-twitterbot.yaml'
+VALID_IDENTICA_CREDENTIALS__DO_NOT_CHECK_IN = 'my-identibot.yaml'
+
+VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN = 'my-bot.yaml'
+INVALID_CONNECT_CREDENTIALS = INVALID_TWITTER_CREDENTIALS
+DEFAULT_CONFIG_FILE = INVALID_CONNECT_CREDENTIALS
+
+# As downtimes happen more often than not, we now support
+# skipping down services.
 #
-class TwitterConnector
+# How to know how to initialize this hash's values?
+# : If lots of tests fail with a Twitter::CantConnect
+#   though you changed little or even nothing, that's an
+#   indicator, that the respective micro-blogging service
+#   is temporarily down. -- I experienced this mostly on
+#   Twitter, never on Identi.ca -- dagobart/20090203
+SERVICE_IS_AVAILABLE = {'twitter'  => true,
+			'identica' => true}
+
+
+class MicroBlogConnector
   def initialize(config_file = DEFAULT_CONFIG_FILE)
     @account_data = YAML::load(File.open(config_file))
 
@@ -28,9 +70,13 @@ class TwitterConnector
        @service_in_use = @account_data['account']['service']
              @username = @account_data[@service_in_use]['user']
              @password = @account_data[@service_in_use]['password']
+            @peer_user = @account_data[@service_in_use]['peer'] # FIXME: add test for this
     @use_alternative_api = @account_data[@service_in_use]['use_alternative_api']
 
-    # ensure we're not using twitterbot.yaml by accident:
+    @service_implements_following = (service_in_use.downcase == 'twitter') # FIXME: add test for this
+      @service_implements_leaving = (service_in_use.downcase == 'twitter') # FIXME: add test for this
+
+    # ensure we're not using some intendedly invalid credentials:
     assess_account_data
 
       # perform actual connect:
@@ -41,17 +87,15 @@ class TwitterConnector
           raise Twitter::CantConnect,
         	   "#{config_file}: Failed to connect to micro-blogging service provider '#{@service_in_use}'."
         end
-        # puts "You're using #{@service_in_use}. Expect other glitches."
       else
         @connection = Twitter::Base.new(@username, @password)
-        # puts "You're using Twitter. Expect glitches."
       end
 
     # finish initializing read-only variables:
     @user_id = @connection.user(@username).id   # ; puts @user_id; exit
   end # we even could implement a reconnect()--but skip that now
 
-  attr_reader :connection, :user_id, :use_alternative_api, :service_in_use, :username #, :password
+  attr_reader :connection, :user_id, :use_alternative_api, :service_in_use, :service_implements_following, :service_implements_leaving, :peer_user, :username #, :password
 
   def errmsg(error)
     if error == Twitter::CantConnect
@@ -70,84 +114,118 @@ class TwitterConnector
   def assess_account_data
     if (@password == 'secret')
       raise StandardError,
-           "\nPlease, use a serious password (or some other config but twitterbot.yaml)!\n"
+           "\nPlease, use a serious password (or some other config but any of the default -- and intendedly invalid -- ones)!\n"
     end
   end
 end
 
 require 'test/unit'
-# require 'twitter_connector'
-class TC_TwitterConnector < Test::Unit::TestCase
+# require 'micro_blog_connector'
+class MicroBlogConnector
+  attr_reader :password
+end
+class TC_MicroBlogConnector < Test::Unit::TestCase
+  def setup
+      twitter_config_file = nil
+     identica_config_file = nil
+
+    # comment away the following two lines for check-in,
+    # uncomment them for actual testing:
+     twitter_config_file =
+                    VALID_TWITTER_CREDENTIALS__DO_NOT_CHECK_IN
+    identica_config_file =
+                   VALID_IDENTICA_CREDENTIALS__DO_NOT_CHECK_IN
+
+    service_is_available = SERVICE_IS_AVAILABLE
+    if service_is_available['twitter'] then
+      @twitter_connector =
+                   MicroBlogConnector.new(twitter_config_file)
+      @twitter_friending =
+                    MicroBlogFriending.new(@twitter_connector)
+    else
+      @twitter_connector = nil
+      @twitter_friending = nil
+    end
+
+    if service_is_available['identica'] then
+      @identica_connector =
+                  MicroBlogConnector.new(identica_config_file)
+      @identica_friending =
+                   MicroBlogFriending.new(@identica_connector)
+    else
+      @identica_connector = nil
+      @identica_friending = nil
+    end
+
+     @connectors = [@twitter_connector, @identica_connector]
+     @friendings = [@twitter_friending, @identica_friending]
+     @connectors.delete(nil)
+     @friendings.delete(nil)
+
+     @connector__friending =
+     		{@twitter_connector  => @twitter_friending,
+     		 @identica_connector => @identica_friending}
+     @connector__friending.delete(nil)
+  end
+
   def test_initialize_in_general
     # assert false # make sure test gets executed at all
 
-    assert_raise StandardError do TwitterConnector.new end
+    assert_raise StandardError do MicroBlogConnector.new end
     assert_raise StandardError do
-      invalid_connector = TwitterConnector.new('fixtures/original-twitterbot.yaml')
+      invalid_connector = MicroBlogConnector.new('fixtures/original-twitterbot.yaml')
     end
 
     assert_raise Twitter::CantConnect do
-      TwitterConnector.new('fixtures/other-enabled_with_invalid_api_URI.yaml')
+      MicroBlogConnector.new('fixtures/other-enabled_with_invalid_api_URI.yaml')
     end
   end
 
-#   # implicitly tested yet by way of test_initialize_in_general(),
-#   # however, why not test it a second time, now explicitly:
-#   def test_assess_account_data
-#     # assert false # make sure test gets executed at all
-#     # # cannot test this as long as TwitterConnector does not
-#     # # export +password+ _and_ as _writable_ too.
-#   end
-
-  # Requires that you have a +my-twitterbot.yaml+ file in place
-  # with valid credentials for an identi.ca account.
-  # Make sure you never check in that +m-twitterbot.yaml+ file
-  # to the repository or to expose it otherwise to the public:
-  # You might get held responsible for any abuses of that account.
   def test_initialize_twitter
     # assert false # make sure test gets executed at all
 
-    twitter_connector = TwitterConnector.new('my-twitterbot.yaml')
+    # do nothing when Twitter is down:
+    return if @twitter_connector == nil
 
-    assert_equal 'twitter',  twitter_connector.service_in_use
-    assert_equal 'logbot',   twitter_connector.username
-    # assert     'secret' != twitter_connector.password
-    assert_equal  nil,       twitter_connector.use_alternative_api
-    assert                  !twitter_connector.use_alternative_api?
-    assert_equal '19619847', twitter_connector.user_id
+    assert_equal 'twitter',  @twitter_connector.service_in_use
+    assert_equal 'logbot',   @twitter_connector.username
+    assert       'secret' != @twitter_connector.password
+    assert_equal  nil,       @twitter_connector.use_alternative_api
+    assert                  !@twitter_connector.use_alternative_api?
+    assert_equal '19619847', @twitter_connector.user_id
   end
 
-  # Requires that you have a +my-identibot.yaml+ file in place
-  # with valid credentials for an identi.ca account.
-  # Make sure you never check in that +m-identibot.yaml+ file
-  # to the repository or to expose it otherwise to the public:
-  # You might get held responsible for any abuses of that account.
   def test_initialize_identica
     # assert false # make sure test gets executed at all
 
-    identica_connector = TwitterConnector.new('my-identibot.yaml')
+    # do nothing when Identi.ca is down:
+    return if @identica_connector == nil
 
-    assert_equal 'identica', identica_connector.service_in_use
-    assert_equal 'logbot',   identica_connector.username
-    # assert     'secret' != identica_connector.password
+    assert_equal 'identica', @identica_connector.service_in_use
+    assert_equal 'logbot',   @identica_connector.username
+    assert       'secret' != @identica_connector.password
     assert_equal 'identi.ca/api',
-                             identica_connector.use_alternative_api
-    assert                  identica_connector.use_alternative_api?
-    assert_equal '36999',    identica_connector.user_id
+                             @identica_connector.use_alternative_api
+    assert                  @identica_connector.use_alternative_api?
+    assert_equal '36999',    @identica_connector.user_id
   end
 
   def test_errmsg
     # assert false # make sure test gets executed at all
 
-    bot_connector = TwitterConnector.new('my-bot.yaml')
-    assert '' != bot_connector.errmsg(Twitter::CantConnect)
+    @connectors.each do |connector|
+      assert '' != connector.errmsg(Twitter::CantConnect)
+    end
   end
 end
 
-class TwitterFriending
+class MicroBlogFriending
   def initialize(connector)
-    @connection = connector.connection
+    @connector = connector
+    @connection = @connector.connection
   end
+
+  attr_reader :connection
 
   # for some unknown reason, this method causes Twitter to hiccup in reply,
   # i.e. answer by: 400: Bad Request (Twitter::CantConnect)
@@ -158,28 +236,40 @@ class TwitterFriending
     "followers gone: #{lost_followers.join(', ')}"
   end
 
+  # +collected_messages+ is intended to ease testing [of this
+  # method]:
   def catch_up_with_followers
+    collected_messages = ''
+
     # follow back everyone we don't [follow back] yet:
     new_followers.each do |follower_screen_name|
-      puts "following back #{follower_screen_name}"
+      message = "following back #{follower_screen_name}"
+      collected_messages += "#{message}\n"
+      puts message
       follow(follower_screen_name)
     end
 
     # leave everyone who left us:
     lost_followers.each do |follower_screen_name|
-      puts "leaving #{follower_screen_name}"
+      message = "leaving #{follower_screen_name}"
+      collected_messages += "#{message}\n"
+      puts message
       leave(follower_screen_name)
     end
+
+    return collected_messages
   end
 
   def follow(user_screen_name)
     @connection.create_friendship(user_screen_name)
-    @connection.follow(user_screen_name) # if service_implements_following
+    @connection.follow(user_screen_name) if @connector.service_implements_following
+    # FIXME: just learned that @connection.follow is a misnomer: @connection.follow means: get notified by followee's updates
   end
 
   def leave(user_screen_name)
-    @connection.leave(user_screen_name) # if service_implements_leaving
+    @connection.leave(user_screen_name) if @connector.service_implements_leaving
     @connection.destroy_friendship(user_screen_name)
+    # FIXME: just learned that @connection.leave is a misnomer: @connection.leave means: get no longer notified by leaveee's updates
   end
 
   # Note: +user_names(@connection.followers - @connection.friends)+
@@ -207,15 +297,248 @@ class TwitterFriending
   def user_names(users)
     users.collect { |user| user.screen_name }
   end
+
+  def is_friend_with?(user_screen_name)
+    @connection.friendship_exists?(@connector.username, user_screen_name)
+  end # FIXME: + add test
+#
+#   def block_follower(user_screen_name)
+#   end
+end
+
+# require 'test/unit'
+# require 'micro_blog_friending'
+class TC_MicroBlogFriending < Test::Unit::TestCase
+  def setup
+      twitter_config_file = nil
+     identica_config_file = nil
+
+    # comment away the following two lines for check-in,
+    # uncomment them for actual testing:
+     twitter_config_file =
+                    VALID_TWITTER_CREDENTIALS__DO_NOT_CHECK_IN
+    identica_config_file =
+                   VALID_IDENTICA_CREDENTIALS__DO_NOT_CHECK_IN
+
+    service_is_available = SERVICE_IS_AVAILABLE
+    if service_is_available['twitter'] then
+      @twitter_connector =
+                   MicroBlogConnector.new(twitter_config_file)
+      @twitter_friending =
+                    MicroBlogFriending.new(@twitter_connector)
+    else
+      @twitter_connector = nil
+      @twitter_friending = nil
+    end
+
+    if service_is_available['identica'] then
+      @identica_connector =
+                  MicroBlogConnector.new(identica_config_file)
+      @identica_friending =
+                   MicroBlogFriending.new(@identica_connector)
+    else
+      @identica_connector = nil
+      @identica_friending = nil
+    end
+
+     @connectors = [@twitter_connector, @identica_connector]
+     @friendings = [@twitter_friending, @identica_friending]
+     @connectors.delete(nil)
+     @friendings.delete(nil)
+
+     @connector__friending =
+     		{@twitter_connector  => @twitter_friending,
+     		 @identica_connector => @identica_friending}
+     @connector__friending.delete(nil)
+  end
+
+  def test_initialize
+    @connector__friending.each do |connector, friending|
+      assert_same connector.connection, friending.connection
+    end
+  end
+
+  class DummyUser
+    def initialize(screen_name)
+      @screen_name = screen_name
+    end
+
+    attr_accessor :screen_name
+
+    def self.generate_some
+      users = []
+      screen_names = []
+
+      n = 1 + (rand * 6).to_i
+
+        1.upto n do
+          screen_name = rand.to_s
+          screen_names << screen_name
+          users << DummyUser.new(screen_name)
+        end
+
+      [users.uniq, screen_names.uniq]
+    end
+  end
+
+  # depends on no MicroBlogFriending method => test it first
+  def test_user_names
+    users, expected_screen_names = DummyUser.generate_some
+
+    @friendings.each do |f|
+      assert_equal expected_screen_names, f.user_names(users)
+    end
+  end
+
+  def ensure_we_follow_peer_user(connector, friending)
+    peer_user = connector.peer_user
+
+      begin
+        friending.follow(peer_user)
+      rescue Twitter::CantFollowUser, Twitter::AlreadyFollowing
+        # this will be the case if bot's not following itself
+      end
+
+    return peer_user
+  end
+
+  # depends on no MicroBlogFriending method => test it first
+  def test_follow_leave
+    @connector__friending.each do |c,f|
+      peer_user = ensure_we_follow_peer_user(c, f)
+
+      assert_nothing_raised do
+        f.leave(peer_user)
+      end
+
+      assert_nothing_raised do
+        f.follow(peer_user)
+      end
+    end
+  end
+
+  # needs user_names() to be working => test that one first
+  def test_friend_names
+    # as long as we are testing against a live micro-blogging
+    # service, its impredictable who's actually
+    # following/friended, as followees can block you in the
+    # middle of a test, or new ones can join, also while the
+    # test is running. Therefore, the test is restricted to
+    # watch out for the peer user, known to be followed by
+    # the bot and also known to be following the bot also.
+    @connector__friending.each do |c,f|
+      peer_user = ensure_we_follow_peer_user(c, f)
+
+      assert_nothing_raised do
+        f.friend_names.select { |friend| friend == peer_user}
+      end
+    end
+  end
+
+  # needs user_names() to be working => test that one first
+  def test_follower_names
+    # as long as we are testing against a live micro-blogging
+    # service, its impredictable who's actually
+    # following/friended, as followees can block you in the
+    # middle of a test, or new ones can join, also while the
+    # test is running. Therefore, the test is restricted to
+    # watch out for the peer user, known to be followed by
+    # the bot and also known to be following the bot also.
+    @connector__friending.each do |c,f|
+      assert_nothing_raised do
+        f.follower_names.select { |follower| follower == c.peer_user}
+      end
+    end
+  end
+
+  # needs follower_names() and friend_names() to be working
+  # => test those first
+  def test_new_followers
+    # without controlling a second account we can't influence
+    # whether or not a certain user is following us, so this
+    # here test is a bit whacky, anyways:
+    expected_new_follower = rand.to_s
+    @friendings.each do |f|
+      new_followers = f.new_followers
+
+      assert_same Array, new_followers.class
+
+      new_followers << expected_new_follower
+
+      assert_equal expected_new_follower,
+                   new_followers.detect { |follower|
+                     follower == expected_new_follower
+                   }
+    end
+  end
+
+  # needs follower_names() and friend_names() to be working
+  # => test those first
+  def test_lost_followers
+    # We can prevent someone -- e.g. the peer user -- from
+    # following, but as we cannot influence they will
+    # re-follow us once we stop preventing them from
+    # following us, it's a bad idea to actually block the
+    # peer user: After that, other tests relying on that the
+    # peer user is still following us, will fail. Therefore,
+    # for this here test applies the same as for
+    # test_new_followers(): This here test is a bit whacky:
+    expected_lost_follower = rand.to_s
+    @friendings.each do |f|
+      lost_followers = f.lost_followers
+
+      assert_same Array, lost_followers.class
+
+      lost_followers << expected_lost_follower
+
+      assert_equal expected_lost_follower,
+                   lost_followers.detect { |follower|
+                     follower == expected_lost_follower
+                   }
+    end
+  end
+
+  # needs new_followers(), lost_followers(), follow() and
+  # leave() to be working => test those first
+  def test_catch_up_with_followers
+    @friendings.each do |f|
+      expected = ''
+
+      f.new_followers.each do |screen_name|
+        expected += "following back #{screen_name}\n"
+      end
+
+      # leave everyone who left us:
+      f.lost_followers.each do |screen_name|
+        expected += "leaving #{screen_name}\n"
+      end
+
+      assert_equal expected, f.catch_up_with_followers,
+                   "If this fails, reason might be that followers/followees joined/left amidst the test. To achieve certainity, just rerun the test."
+    end
+  end
+
+  # needs friend_names(), follower_names(),new_followers()
+  # and lost_followers() to be working => test those first
+  def test_follower_stats
+    @friendings.each do |f|
+      s = "friends:        #{f.friend_names.join(', ')}\n" +
+          "followers:      #{f.follower_names.join(', ')}\n" +
+          "new followers:  #{f.new_followers.join(', ')}\n" +
+          "followers gone: #{f.lost_followers.join(', ')}"
+      assert_equal s, f.follower_stats
+    end
+  end
 end
 
 class TwitterMessagingIO
   LATEST_TWEED_ID_PERSISTENCY_FILE = 'latest_tweeds.yaml'
   # Note:
-  # Instead of reusing twitterbot.yaml, we currently use latest_tweeds.yaml
-  # to persist the ID of the latest received tweed. Reason for not reusing
-  # the twitterbot.yaml file is the risk of accidentally kill that file, thus
-  # the login credentials as well.
+  # Instead of re-using the login credentials file named by
+  # +VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN+, we currently use
+  # latest_tweeds.yaml to persist the ID of the latest received tweed.
+  # Reason for not reusing the login credentials file is the risk of
+  # accidentally kill that file, thus the login credentials might get lost.
   #
   # If you've got an idea how to improve the latest tweed ID storage, please
   # let me know. -- @dagobart/20090129
@@ -293,8 +616,9 @@ end
 
 class TwitterBot
   def initialize
-    @connector = TwitterConnector.new('my-bot.yaml')
-    @friending = TwitterFriending.new(@connector)
+    @connector =
+          MicroBlogConnector.new( VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN )
+    @friending = MicroBlogFriending.new(@connector)
     @talk = TwitterMessagingIO.new(@connector)
 
     begin

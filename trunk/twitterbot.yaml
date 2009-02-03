@@ -3,10 +3,12 @@ account:
 
 
 twitter:
+  peer: dagobart    # testing needs a second user to bond with
   user: twitterbot
   password: secret
 
 identica:
+  peer: dagobart
   user: identicabot
   password: secret
   use_alternative_api: 'identi.ca/api'
