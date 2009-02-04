@@ -40,7 +40,7 @@ require 'yaml'
 # that the names of these valid files are assigned to
 # VALID_TWITTER_CREDENTIALS__DO_NOT_CHECK_IN and
 # VALID_IDENTICA_CREDENTIALS__DO_NOT_CHECK_IN respectively.
-INVALID_TWITTER_CREDENTIALS = 'twitterbot.yaml'
+ INVALID_TWITTER_CREDENTIALS = 'twitterbot.yaml'
 INVALID_IDENTICA_CREDENTIALS = 'identibot.yaml'
 VALID_TWITTER_CREDENTIALS__DO_NOT_CHECK_IN = 'my-twitterbot.yaml'
 VALID_IDENTICA_CREDENTIALS__DO_NOT_CHECK_IN = 'my-identibot.yaml'
@@ -48,6 +48,17 @@ VALID_IDENTICA_CREDENTIALS__DO_NOT_CHECK_IN = 'my-identibot.yaml'
 VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN = 'my-bot.yaml'
 INVALID_CONNECT_CREDENTIALS = INVALID_TWITTER_CREDENTIALS
 DEFAULT_CONFIG_FILE = INVALID_CONNECT_CREDENTIALS
+
+MB_SERVICE__CFG_FILE =
+	{
+	 'identica' => VALID_IDENTICA_CREDENTIALS__DO_NOT_CHECK_IN,
+	  'twitter' =>  VALID_TWITTER_CREDENTIALS__DO_NOT_CHECK_IN
+	}
+KNOWN_MICRO_BLOGGING_SERVICES = MB_SERVICE__CFG_FILE.keys
+KNOWN_MIN_TWEED_ID = {
+		       'identica' => 2068347,
+		        'twitter' => 1164876335
+		     }
 
 # As downtimes happen more often than not, we now support
 # skipping down services.
@@ -61,6 +72,12 @@ DEFAULT_CONFIG_FILE = INVALID_CONNECT_CREDENTIALS
 SERVICE_IS_AVAILABLE = {'twitter'  => true,
 			'identica' => true}
 
+MISSING_FEATURES =
+    {
+      'identica' => ['destroy', 'follow', 'leave'],
+       'twitter' => ['destroy'] # FIXME: fix destroy()
+    }
+POSSIBLE_SHORTFALLS = MISSING_FEATURES.values.flatten.uniq
 
 class MicroBlogConnector
   def initialize(config_file = DEFAULT_CONFIG_FILE)
@@ -73,8 +90,11 @@ class MicroBlogConnector
             @peer_user = @account_data[@service_in_use]['peer'] # FIXME: add test for this
     @use_alternative_api = @account_data[@service_in_use]['use_alternative_api']
 
-    @service_implements_following = (service_in_use.downcase == 'twitter') # FIXME: add test for this
-      @service_implements_leaving = (service_in_use.downcase == 'twitter') # FIXME: add test for this
+    @service_lacks = Hash.new
+    POSSIBLE_SHORTFALLS.each do |possible_shortfall|
+      current_service_lacks_anything = (MISSING_FEATURES[service_in_use.downcase] != nil)
+      @service_lacks[possible_shortfall] = (MISSING_FEATURES[service_in_use.downcase].find_index(possible_shortfall) != nil) if current_service_lacks_anything
+    end
 
     # ensure we're not using some intendedly invalid credentials:
     assess_account_data
@@ -95,11 +115,11 @@ class MicroBlogConnector
     @user_id = @connection.user(@username).id   # ; puts @user_id; exit
   end # we even could implement a reconnect()--but skip that now
 
-  attr_reader :connection, :user_id, :use_alternative_api, :service_in_use, :service_implements_following, :service_implements_leaving, :peer_user, :username #, :password
+  attr_reader :connection, :user_id, :use_alternative_api, :service_in_use, :service_lacks, :peer_user, :username #, :password
 
   def errmsg(error)
     if error == Twitter::CantConnect
-      "#{@service_in_use} says it couldn't connect. Trans lates to: is refusing to perform the desired action for us."
+      "#{@service_in_use} says it couldn't connect. Translates to: is refusing to perform the desired action for us."
     else
       "something went wrong on #{@service_in_use} with the just before intended action."
     end
@@ -193,6 +213,10 @@ class TC_MicroBlogConnector < Test::Unit::TestCase
     assert_equal  nil,       @twitter_connector.use_alternative_api
     assert                  !@twitter_connector.use_alternative_api?
     assert_equal '19619847', @twitter_connector.user_id
+
+    MISSING_FEATURES['twitter'].each do |shortfall|
+      assert @twitter_connector.service_lacks[shortfall]
+    end
   end
 
   def test_initialize_identica
@@ -208,6 +232,10 @@ class TC_MicroBlogConnector < Test::Unit::TestCase
                              @identica_connector.use_alternative_api
     assert                  @identica_connector.use_alternative_api?
     assert_equal '36999',    @identica_connector.user_id
+
+    MISSING_FEATURES['identica'].each do |shortfall|
+      assert @identica_connector.service_lacks[shortfall]
+    end
   end
 
   def test_errmsg
@@ -262,12 +290,12 @@ class MicroBlogFriending
 
   def follow(user_screen_name)
     @connection.create_friendship(user_screen_name)
-    @connection.follow(user_screen_name) if @connector.service_implements_following
+    @connection.follow(user_screen_name) unless @connector.service_lacks['follow']
     # FIXME: just learned that @connection.follow is a misnomer: @connection.follow means: get notified by followee's updates
   end
 
   def leave(user_screen_name)
-    @connection.leave(user_screen_name) if @connector.service_implements_leaving
+    @connection.leave(user_screen_name) unless @connector.service_lacks['leave']
     @connection.destroy_friendship(user_screen_name)
     # FIXME: just learned that @connection.leave is a misnomer: @connection.leave means: get no longer notified by leaveee's updates
   end
@@ -531,7 +559,7 @@ class TC_MicroBlogFriending < Test::Unit::TestCase
   end
 end
 
-class TwitterMessagingIO
+class MicroBlogMessagingIO
   LATEST_TWEED_ID_PERSISTENCY_FILE = 'latest_tweeds.yaml'
   # Note:
   # Instead of re-using the login credentials file named by
@@ -614,12 +642,173 @@ class TwitterMessagingIO
   end
 end
 
+# # require 'test/unit'
+# # require 'micro_blog_messaging_io'
+class MicroBlogMessagingIO
+  attr_reader :connector, :connection
+  attr_accessor :latest_tweeds
+end
+class TC_MicroBlogMessagingIO < Test::Unit::TestCase
+  def setup
+    @mb_services = KNOWN_MICRO_BLOGGING_SERVICES
+
+    service_is_available = SERVICE_IS_AVAILABLE
+    service__config_file = MB_SERVICE__CFG_FILE
+
+    @latest_message_received = Hash.new
+      @connector__message_io = Hash.new
+                  @connector = Hash.new
+                 @message_io = Hash.new
+
+    service__config_file.each do |mb_service, config_file|
+      if service_is_available[mb_service] then
+         connector = MicroBlogConnector.new(config_file)
+        message_io = MicroBlogMessagingIO.new(connector)
+
+        @connector__message_io[connector] = message_io
+
+           @connector[mb_service] = connector
+          @message_io[mb_service] = message_io
+        @latest_message_received[mb_service] =
+               message_io.latest_tweeds['inbox_latest'][mb_service].to_i
+      end
+    end
+  end
+
+  def test_initialize
+    @connector__message_io.each do |c,io|
+       assert_same c, io.connector
+       assert_same c.connection, io.connection
+    end
+
+    KNOWN_MIN_TWEED_ID.each do |mb_service, min_tweed_id|
+      assert @latest_message_received[mb_service] >= min_tweed_id if SERVICE_IS_AVAILABLE[mb_service]
+    end
+  end
+
+  def test_say
+    @connector__message_io.each do |connector, io|
+      message = "test: say(#{rand.to_s})"
+      result = io.say(message)
+
+        assert_same Twitter::Status, result.class
+        assert result.id != nil
+        assert_equal message, result.text
+        assert_equal connector.username, result.user.screen_name
+
+      io.connection.destroy(result.id) unless connector.service_lacks['destroy']
+    end
+  end
+
+  def test_reply
+    @connector__message_io.each do |connector, io|
+      pilot_fish = io.say("test: say(#{rand.to_s})")
+      message = "test: reply(#{pilot_fish.id}, #{rand.to_s})"
+      result = io.reply(message, pilot_fish.id, pilot_fish.user.id)
+
+        assert_same Twitter::Status, result.class
+        assert result.id != nil
+        assert_equal pilot_fish.id, result.in_reply_to_status_id
+        assert_equal message, result.text
+        assert_equal connector.username, result.user.screen_name
+        assert_equal pilot_fish.user.id, result.user.id
+
+      unless connector.service_lacks['destroy']
+        io.connection.destroy(result.id)
+        io.connection.destroy(pilot_fish.id)
+      end
+    end
+  end
+
+  def test_latest_message_received__read
+    @message_io.each do |mb_service, io|
+      assert_equal @latest_message_received[mb_service],
+                   io.latest_message_received.to_i
+    end
+  end
+
+  def test_latest_message_received__write
+    @message_io.values.each do |io|
+      value = rand.to_s
+      assert_equal value, io.latest_message_received = value
+
+      # bonus: do an additional read test:
+      assert_equal value, io.latest_message_received
+    end
+  end
+
+  def test_get_latest_replies
+    @message_io.each do |mb_service, io|
+      ancient_msg_max_id = KNOWN_MIN_TWEED_ID[mb_service]
+
+        io.latest_message_received = ancient_msg_max_id
+        latest_reply = io.get_latest_replies(false).last
+
+      assert_equal ancient_msg_max_id, io.latest_message_received
+      assert ancient_msg_max_id < latest_reply['id']
+
+        recent_replies = io.get_latest_replies(true)
+        # puts mb_service, recent_replies.pretty_inspect
+        latest_reply = recent_replies.last
+
+      assert       ancient_msg_max_id < io.latest_message_received
+      assert       ancient_msg_max_id < latest_reply['id']
+      assert_equal latest_reply['id'], io.latest_message_received if (mb_service == 'identica') # fixme: find appropriate test for Twitter
+    end
+  end # FIXME: unify whether or not IDs shall be Fixnums or Strings
+
+  def test_shutdown
+    msg_io_for_compare = []
+      conn_for_compare = []
+    KNOWN_MICRO_BLOGGING_SERVICES.each do |mb_service|
+      if SERVICE_IS_AVAILABLE[mb_service] then
+        msg_io_for_compare << @message_io[mb_service]
+          conn_for_compare << @connector[mb_service]
+      end
+    end
+    assert_not_nil msg_io_for_compare
+    1.upto(msg_io_for_compare.size - 1) do |index|
+      assert_equal msg_io_for_compare[0].latest_tweeds,
+                   msg_io_for_compare[index].latest_tweeds
+    end
+    message_io = msg_io_for_compare[0]
+    connector  =   conn_for_compare[0]
+
+      orig_latest_tweeds = message_io.latest_tweeds
+
+        # Note:
+        # w/o the two to_s, the later equality assertion fails
+        # although it displays exactly the same values for both
+        # values compared, i.e. for +new_latest_tweeds+ and for
+        # what gets compared to it.
+        new_latest_tweeds = {
+        		      'inbox_latest' =>
+        		    	{
+        		    	  'identica' => rand.to_s,
+        		    	  'twitter'  => rand.to_s
+        		    	}
+        		    }
+        message_io.latest_tweeds = new_latest_tweeds
+        message_io.shutdown
+
+        message_io = MicroBlogMessagingIO.new(connector)
+
+        assert_equal new_latest_tweeds, message_io.latest_tweeds
+
+      message_io.latest_tweeds = orig_latest_tweeds
+      message_io.shutdown
+
+    message_io = MicroBlogMessagingIO.new(connector)
+    assert_equal orig_latest_tweeds, message_io.latest_tweeds
+  end # FIXME: if possible, unify whether it's to be latest_tweeds or latest_message_received
+end
+
 class TwitterBot
   def initialize
     @connector =
           MicroBlogConnector.new( VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN )
     @friending = MicroBlogFriending.new(@connector)
-    @talk = TwitterMessagingIO.new(@connector)
+    @talk = MicroBlogMessagingIO.new(@connector)
 
     begin
       puts @friending.follower_stats
