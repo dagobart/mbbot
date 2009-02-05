@@ -60,6 +60,13 @@ KNOWN_MIN_TWEED_ID = {
 		        'twitter' => 1164876335
 		     }
 
+MISSING_FEATURES =
+    {
+      'identica' => ['destroy', 'follow', 'leave'],
+       'twitter' => ['destroy'] # FIXME: fix destroy()
+    }
+POSSIBLE_SHORTFALLS = MISSING_FEATURES.values.flatten.uniq
+
 # As downtimes happen more often than not, we now support
 # skipping down services.
 #
@@ -71,13 +78,6 @@ KNOWN_MIN_TWEED_ID = {
 #   Twitter, never on Identi.ca -- dagobart/20090203
 SERVICE_IS_AVAILABLE = {'twitter'  => true,
 			'identica' => true}
-
-MISSING_FEATURES =
-    {
-      'identica' => ['destroy', 'follow', 'leave'],
-       'twitter' => ['destroy'] # FIXME: fix destroy()
-    }
-POSSIBLE_SHORTFALLS = MISSING_FEATURES.values.flatten.uniq
 
 class MicroBlogConnector
   def initialize(config_file = DEFAULT_CONFIG_FILE)
@@ -642,8 +642,8 @@ class MicroBlogMessagingIO
   end
 end
 
-# # require 'test/unit'
-# # require 'micro_blog_messaging_io'
+# require 'test/unit'
+# require 'micro_blog_messaging_io'
 class MicroBlogMessagingIO
   attr_reader :connector, :connection
   attr_accessor :latest_tweeds
@@ -881,12 +881,12 @@ end
 # bot.shutdown
 
 # todo:
-# + add tests
+# ~ separate tests from main file
+# ~ move classes of main file to separate files
+# + add tests for TwitterBot
 # + add functionality to parse/act on/answer updates
 # + Don't attempt to follow back any users whose accounts are under Twitter
 #   investigation, such as @michellegggssee.
-#   . a bot service that determines spam bot followers (followees?) would be
-#     nice
 # + make sure that if users change their screen names, nothing is going to
 #   break
 # + learn to deal with errors like this: "in `handle_response!': Twitter is
