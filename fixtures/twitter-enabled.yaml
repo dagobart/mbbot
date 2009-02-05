@@ -5,12 +5,12 @@ account:
 twitter:
   peer: dagobart    # testing needs a second user to bond with
   user: twitterbot
-  password: secret
+  password: 'non "secret" reading though still invalid password'
 
 identica:
   peer: dagobart
   user: identicabot
-  password: secret
+  password: 'non "secret" reading though still invalid password'
   use_alternative_api: 'identi.ca/api'
 
 # use YAML::Store.load():
