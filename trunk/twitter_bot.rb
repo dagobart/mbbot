@@ -18,9 +18,11 @@ class TwitterBot
   end
 
   def operate
-    # progress_message = 'Just learned how to ...'
-    # progress_message = '@rbq, @laza Tests are cruical, hence I cannot avoid test msgs coming along every now+then. However, sorry for bothering you with them.'
-    @talk.say(progress_message)
+    progress_message = nil
+      # progress_message = 'Just learned how to ...'
+#       progress_message = 'Just got my tests wrapped with a testsuite.'
+    @talk.say(progress_message) if progress_message
+
     process_latest_received
   end
 
@@ -80,12 +82,11 @@ bot.operate
 bot.shutdown
 
 # todo:
-# + replace twitter_bot.rb by a stripped down version + new
-#   files which contain the classes separated from twitter_bot.rb
-# ~ separate tests from main file
-# ~ move classes of main file to separate files
+# + create a sub-directory for all the test(s), put all the +fixtures+ there, too
+# + add functionality to parse/act on/answer updates (w/o parser, at first)
+# + fix identica issue on status vs reply
+# + ramp up a v0.1 release
 # + add tests for TwitterBot
-# + add functionality to parse/act on/answer updates
 # + Don't attempt to follow back any users whose accounts are under Twitter
 #   investigation, such as @michellegggssee.
 # + make sure that if users change their screen names, nothing is going to
