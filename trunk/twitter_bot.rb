@@ -83,6 +83,7 @@ bot.operate
 bot.shutdown
 
 # todo:
+# + create a v0.0.4 tag
 # + add functionality to parse/act on/answer updates (w/o parser, at first)
 # + fix identica issue on status vs reply
 # + ramp up a v0.1 release
