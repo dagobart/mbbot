@@ -35,14 +35,22 @@
 # that the names of these valid files are assigned to
 # VALID_TWITTER_CREDENTIALS__DO_NOT_CHECK_IN and
 # VALID_IDENTICA_CREDENTIALS__DO_NOT_CHECK_IN respectively.
- INVALID_TWITTER_CREDENTIALS = 'twitterbot.yaml'
-INVALID_IDENTICA_CREDENTIALS = 'identibot.yaml'
-VALID_TWITTER_CREDENTIALS__DO_NOT_CHECK_IN = 'my-twitterbot.yaml'
-VALID_IDENTICA_CREDENTIALS__DO_NOT_CHECK_IN = 'my-identibot.yaml'
+config_dir      = File.join(File.dirname(__FILE__), 'config', '')
+fixtures_dir    = File.join(File.dirname(__FILE__), 'test',   'fixtures', '')
+credentials_dir = File.join(File.dirname(__FILE__), 'config', 'credentials', '')
 
-VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN = 'my-bot.yaml'
+ INVALID_TWITTER_CREDENTIALS                = credentials_dir +    'twitterbot.yaml'
+INVALID_IDENTICA_CREDENTIALS                = credentials_dir +     'identibot.yaml'
+VALID_TWITTER_CREDENTIALS__DO_NOT_CHECK_IN  = credentials_dir + 'my-twitterbot.yaml'
+VALID_IDENTICA_CREDENTIALS__DO_NOT_CHECK_IN = credentials_dir +  'my-identibot.yaml'
+VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN  = credentials_dir + 'my-bot.yaml'
+
 INVALID_CONNECT_CREDENTIALS = INVALID_TWITTER_CREDENTIALS
 DEFAULT_CONFIG_FILE = INVALID_CONNECT_CREDENTIALS
+
+FIXTURES__ORIGINAL_TWITTERBOT = fixtures_dir + 'original-twitterbot.yaml'
+FIXTURES__OTHER_ENABLED_WITH_INVALID_API_URI =
+	         fixtures_dir + 'other-enabled_with_invalid_api_URI.yaml'
 
 MB_SERVICE__CFG_FILE =
 	{
@@ -54,6 +62,7 @@ KNOWN_MIN_TWEED_ID = {
 		       'identica' => 2068347,
 		        'twitter' => 1164876335
 		     }
+LATEST_TWEED_ID_PERSISTENCY_FILE = config_dir + 'latest_tweeds.yaml'
 
 MISSING_FEATURES =
     {

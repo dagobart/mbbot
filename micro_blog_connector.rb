@@ -2,7 +2,8 @@ require 'rubygems'
 gem('twitter', '>=0.4.1')
 require 'twitter'
 require 'yaml'
-require 'micro_blog_consts'
+# require 'micro_blog_consts'
+require File.join(File.dirname(__FILE__), 'micro_blog_consts')
 
 class MicroBlogConnector
   def initialize(config_file = DEFAULT_CONFIG_FILE)

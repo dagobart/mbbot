@@ -1,7 +1,7 @@
-require 'micro_blog_friending'
+# require 'micro_blog_friending'
+require File.join(File.dirname(__FILE__), 'micro_blog_friending')
 
 class MicroBlogMessagingIO
-  LATEST_TWEED_ID_PERSISTENCY_FILE = 'latest_tweeds.yaml'
   # Note:
   # Instead of re-using the login credentials file named by
   # +VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN+, we currently use
