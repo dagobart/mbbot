@@ -1,6 +1,7 @@
-require 'micro_blog_connector'
-require 'micro_blog_friending'
-require 'micro_blog_messaging_io'
+main_dir = File.join(File.dirname(__FILE__), '')
+require (main_dir + 'micro_blog_connector')
+require (main_dir + 'micro_blog_friending')
+require (main_dir + 'micro_blog_messaging_io')
 
 class TwitterBot
   def initialize
@@ -82,7 +83,6 @@ bot.operate
 bot.shutdown
 
 # todo:
-# + create a sub-directory for all the test(s), put all the +fixtures+ there, too
 # + add functionality to parse/act on/answer updates (w/o parser, at first)
 # + fix identica issue on status vs reply
 # + ramp up a v0.1 release

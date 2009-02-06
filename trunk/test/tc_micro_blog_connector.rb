@@ -1,5 +1,6 @@
 require 'test/unit'
-require 'micro_blog_connector'
+
+require File.join(File.dirname(__FILE__), '..', 'micro_blog_connector')
 
 class MicroBlogConnector
   attr_reader :password
@@ -40,11 +41,11 @@ class TC_MicroBlogConnector < Test::Unit::TestCase
 
     assert_raise StandardError do MicroBlogConnector.new end
     assert_raise StandardError do
-      invalid_connector = MicroBlogConnector.new('fixtures/original-twitterbot.yaml')
+      invalid_connector = MicroBlogConnector.new(FIXTURES__ORIGINAL_TWITTERBOT)
     end
 
     assert_raise Twitter::CantConnect do
-      MicroBlogConnector.new('fixtures/other-enabled_with_invalid_api_URI.yaml')
+      MicroBlogConnector.new(FIXTURES__OTHER_ENABLED_WITH_INVALID_API_URI)
     end
   end
 

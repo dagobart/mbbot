@@ -1,5 +1,6 @@
 require 'test/unit'
-require 'micro_blog_friending'
+
+require File.join(File.dirname(__FILE__), '..', 'micro_blog_friending')
 
 class TC_MicroBlogFriending < Test::Unit::TestCase
   def setup

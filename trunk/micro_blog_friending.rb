@@ -1,4 +1,5 @@
-require 'micro_blog_connector'
+# require 'micro_blog_connector'
+require File.join(File.dirname(__FILE__), 'micro_blog_connector')
 
 class MicroBlogFriending
   def initialize(connector)

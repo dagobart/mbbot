@@ -1,5 +1,6 @@
 require 'test/unit'
-require 'micro_blog_messaging_io'
+
+require File.join(File.dirname(__FILE__), '..', 'micro_blog_messaging_io')
 
 class MicroBlogMessagingIO
   attr_reader :connector, :connection
