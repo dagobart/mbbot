@@ -68,7 +68,7 @@ The second, you achieve by just copying these files to some of your own:
 	$ cd config/credentials/
 	$ cp twitterbot.yaml my-twitterbot.yaml
 	$ cp twitterbot.yaml my-bot.yaml
-	$ cp twitterbot.yaml my-twitterbot.yaml
+	$ cp twitterbot.yaml my-identibot.yaml
 
 Note, that the 'my-'s are not just an indicator for placeholder file names
 but the names are really meant to feature a prepended 'my-'. If you long for
@@ -77,8 +77,10 @@ you need to update the micro_blog_consts.rb consts
 +VALID_*_CREDENTIALS__DO_NOT_CHECK_IN+ with your alternative names then.
 
 Once you have these three files in place you need to enter valid credentials
-there. The files are structured and easily understood. As an example, here's
-the original twitterbot.yaml:
+there. Obviously, +my-twitterbot.yaml+ is for Twitter credentials and
++my-identibot.yaml+ for Identica. (Note, that it's +identibot+, not
++identicabot+.) Below, we go into my-bot.yaml, too. The files are structured
+and easily understood. As an example, here's the original twitterbot.yaml:
 
         account:
           service: twitter
@@ -96,12 +98,22 @@ the original twitterbot.yaml:
           use_alternative_api: 'identi.ca/api'
 
 As you can see, there is an +account+, a +twitter+ and an +identica+ block in
-here, and you might wonder about the latter, since this file is for Twitter
-credentials. The answer is: It's handy, if you can switch between different
-services just by changing the +service+ line of the +account+ block. Also,
-twitterbot.yaml gets used to create the my-bot.yaml. Particularly there it
-makes a lot of sense to can switch between services quickly. Remember the
-Fail Whales phase of Twitter? See. Just switch to the alternative then.
+here, and you might wonder about the latter, since this file seems to be for
+Twitter credentials. The answer is: As you've seen above, we actually use
+this file as a master for all the other credentials files. Also, it's simply
+handy to be able to switch between different services just by changing the
++service+ line of the +account+ block. Remember the Fail Whales phase of
+Twitter? There you have it. Just switch to the alternative then.
+
+=== How do I get the actual credentials files?
+
+Simple: In your +my-identibot.yaml+, set +service+ to +identica+, in
++my-twitterbot.yaml+ keep it on +twitter+, and in +my-bot.yaml+ just make
+your choice.
+
++my-identibot.yaml+ and +my-twitterbot.yaml+ are for tests, but if Twitter
+fail whales +my-bot.yaml+ is your place to go to switch to an alternative
+service.
 
 === Areas of the credentials file(s)
 
@@ -125,7 +137,7 @@ the +identica+ block, rename it appropriately, update login and peer fields,
 and the +use_alternative_api+ field. Finally, set +service+ in the +account+
 block to your new service.
 
-=== The other credentials files
+=== Feel free to delete
 
 In any of the credentials files mentioned above, you are free to delete the
 blocks you don't need. Essential are only the +account+ block and that
@@ -166,7 +178,8 @@ against Twitter too.
 * There is no way to delete messages. Consecutively, messages generated
   during tests don't get cleaned up afterwards. This could annoy followers of
   your bot. (My bot lost four of the due to test messages, so far.) However,
-  you could take your chances and run tests only when your bot's followers are
+  you could take your chances and run tests only when your bot's followers
+are
   offline.
 * Communicating by direct messages is not yet implemented.
 * In case, Twitter temporarily blacklists our IP address we will run into it
