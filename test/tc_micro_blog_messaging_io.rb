@@ -100,18 +100,22 @@ class TC_MicroBlogMessagingIO < Test::Unit::TestCase
       ancient_msg_max_id = KNOWN_MIN_TWEED_ID[mb_service]
 
         io.latest_message_received = ancient_msg_max_id
-        latest_reply = io.get_latest_replies(false).last
+        latest_replies = io.get_latest_replies(false)
+        latest_reply = latest_replies.last
 
       assert_equal ancient_msg_max_id, io.latest_message_received
+      assert latest_replies.size > 0
+      assert_not_nil latest_reply
+      assert_same Hash, latest_reply.class
       assert ancient_msg_max_id < latest_reply['id']
 
         recent_replies = io.get_latest_replies(true)
-        # puts mb_service, recent_replies.pretty_inspect
-        latest_reply = recent_replies.last
+        latest_reply = recent_replies.first
+        # puts mb_service, recent_replies.pretty_inspect, recent_replies.first.pretty_inspect
 
       assert       ancient_msg_max_id < io.latest_message_received
       assert       ancient_msg_max_id < latest_reply['id']
-      assert_equal latest_reply['id'], io.latest_message_received if (mb_service == 'identica') # fixme: find appropriate test for Twitter
+      assert_equal io.latest_message_received, latest_reply['id']
     end
   end # FIXME: unify whether or not IDs shall be Fixnums or Strings
 
