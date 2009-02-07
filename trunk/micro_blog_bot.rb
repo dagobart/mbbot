@@ -94,12 +94,8 @@ bot = MicroBlogBot.new
 bot.operate
 bot.shutdown
 
+
 # todo:
-#   + intensive/intensify parsing via class inheritant
-# + put bot commands to a hash, so creation of derivate bots might be as
-#   simple as modifying that hash.
-#   + also, if possible and useful, we could assign +block+s as (some of) the
-#     hash's values to even handle functionality accessible by commands
 # + ramp up a v0.1 release
 # + enable message destruction
 #   + make message/reply tests to immediately clean up after themselves
@@ -120,3 +116,7 @@ bot.shutdown
 # + read documentation of jnunemaker's Twitter gem/ask him whether or not
 #   he'd like it if I'd contribute any
 # + join forces with other ~Twitter bots' developers
+# + if possible and useful, allow +block+s as values for the @bot_commands
+#   hash, so developing own derivate bots would become dead-simple: Just
+#   inherit your bot, then change the commands hash as you like.
+#   + intensify parsing via inheritant
