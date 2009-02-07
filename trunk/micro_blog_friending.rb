@@ -40,7 +40,9 @@ class MicroBlogFriending
     end
 
     return collected_messages
-  end
+  end # FIXME: return array of new followers/leavers instead, so we can do
+      # anything with that info. Such as welcoming the new followers with
+      # some 'howto' message,
 
   def follow(user_screen_name)
     @connection.create_friendship(user_screen_name)

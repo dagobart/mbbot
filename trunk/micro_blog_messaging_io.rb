@@ -60,21 +60,34 @@ class MicroBlogMessagingIO
   def get_latest_replies(perform_latest_message_id_update = true)
     latest_message_id = self.latest_message_received # 1st received on twitter: 1158336454
 
-      latest_replies = @connection.replies(:since_id => latest_message_id).collect do |reply|
-        # take side-note(s):
-        id = reply.id.to_i
-        latest_message_id = id if (id > latest_message_id)
+      latest_replies = []
+      @connection.replies(:since_id => latest_message_id).each do |reply|
+        msg = reply.text
 
-        # perform actual collect:
-        {
-           'created_at' => reply.created_at,
-                   'id' => id,
-          'screen_name' => reply.user.screen_name,
-                 'text' => reply.text,
-              'user_id' => reply.user.id
-        }
+        # though Twitter handles replies correctly, identi.ca falsely claims
+        # everything to be a reply that just contains '@logbot' (i.e. the
+        # bot's user name) _somewhere_ in a message body, so even if
+        # completely unrelated, such as '@dagobart, @logbot is great'.
+        # Therefore, we fix that by +(/^@#{bot_name}/ =~ msg)+ below; the
+        # attached +!(sender_name == bot_name)+ is only there to prevent the
+        # bot from chatting with itself.
+        bot_name = @connector.username
+        sender_name = reply.user.screen_name
+        if (/^@#{bot_name}/ =~ msg) && !(sender_name == bot_name) then # FIXME: add tests for both of these
+          # take side-note(s):
+          id = reply.id.to_i
+          latest_message_id = id if (id > latest_message_id)
+
+          # perform actual collect:
+          latest_replies << {
+			       'created_at' => reply.created_at,
+				       'id' => id,
+			      'screen_name' => sender_name,
+				     'text' => msg,
+				  'user_id' => reply.user.id
+			    }
+        end
       end
-      # filter_replies if every_message_is_tagged_reply?
       # puts latest_replies.pretty_inspect
 
     self.latest_message_received = latest_message_id if perform_latest_message_id_update
