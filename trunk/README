@@ -171,6 +171,12 @@ set +twitter+ to +false+ once it nags again, and develop against Identica
 only, for a while. Just make sure you re-enable it later and run your tests
 against Twitter too.
 
+= Benefits
+* All base classes are diligently tested and girdled with tests, therefore if
+  modifications are going to break anything, you will know quickly.
+* Simple command and answer bots can be done in a matter of minutes, just by
+  modifying the +@commands+ hash of +MicroBlogBot+.
+
 = Known shortcomings
 
 * Currently, the bot does not run permanently but runs a single cycle only,
@@ -179,8 +185,7 @@ against Twitter too.
   during tests don't get cleaned up afterwards. This could annoy followers of
   your bot. (My bot lost four of the due to test messages, so far.) However,
   you could take your chances and run tests only when your bot's followers
-are
-  offline.
+  are offline.
 * Communicating by direct messages is not yet implemented.
 * In case, Twitter temporarily blacklists our IP address we will run into it
   without any preventive measures.
@@ -190,11 +195,10 @@ are
 * It's untested what might happen once a followee decides to change their
   nick name.
 
-= Benefits
-* All base classes are diligently tested and girdled with tests, therefore if
-  modifications are going to break anything, you will know quickly.
-* Simple command and answer bots can be done in a matter of minutes, just by
-  modifying the +@commands+ hash of +MicroBlogBot+.
+= Author
+
+This micro-blogging chat bot mini-framework was developed in January/February
+2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com> aka @dagobart aka A.F.
 
 = Contribute to the MicroBlogBot framework
 
@@ -206,4 +210,4 @@ the files to a gem.
 However, I'd be glad to see just any contribution of yours to this here
 project.
 
-Looking forward to hear from you. Just send a mail to helbrecht at gmx. net
+Looking forward to hear from you. Just send a mail.

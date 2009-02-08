@@ -3,6 +3,17 @@ require (main_dir + 'micro_blog_connector')
 require (main_dir + 'micro_blog_friending')
 require (main_dir + 'micro_blog_messaging_io')
 
+# This piece of software is released under the
+# Lesser GNU General Public License version 3.
+#
+# Copyright (c) 2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com>
+#
+#
+# Follow me on Twitter or Identi.ca, where you'll find me as @dagobart but
+# under the first name/last name pseudonyme A.F.
+#
+# Suggestions? Please let me know.
+
 class MicroBlogBot
   def initialize
     @connector =
@@ -35,9 +46,13 @@ class MicroBlogBot
 
   def operate
     progress_message = nil
-      # progress_message = 'Just learned how to ...'
-#       progress_message = '@peqi Don\'t know. I haven\'t done anything about feeds. I think, it just was the default when I signed up.'
-    @talk.say(progress_message) if progress_message
+#       progress_message = 'Just learned how to ...'
+#       progress_message = 'Just got registered to sourceforge.net/. In other words: Soon I might be free (LGPL 3) for everyone. #Identica #chat #bot'
+#     @connector.connection.destroy(@talk.say('test').id)
+    if progress_message
+      msg = @talk.say(progress_message)
+      puts msg.id # so we could delete it manually any later
+    end
 
     process_latest_received
   end
@@ -96,7 +111,6 @@ bot.shutdown
 
 
 # todo:
-# + ramp up a v0.1 release
 # + enable message destruction
 #   + make message/reply tests to immediately clean up after themselves
 # + create perma-runnable version

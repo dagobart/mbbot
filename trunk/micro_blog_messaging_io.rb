@@ -1,6 +1,17 @@
 # require 'micro_blog_friending'
 require File.join(File.dirname(__FILE__), 'micro_blog_friending')
 
+# This piece of software is released under the
+# Lesser GNU General Public License version 3.
+#
+# Copyright (c) 2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com>
+#
+#
+# Follow me on Twitter or Identi.ca, where you'll find me as @dagobart but
+# under the first name/last name pseudonyme A.F.
+#
+# Suggestions? Please let me know.
+
 class MicroBlogMessagingIO
   # Note:
   # Instead of re-using the login credentials file named by

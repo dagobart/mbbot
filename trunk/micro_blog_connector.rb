@@ -5,6 +5,17 @@ require 'yaml'
 # require 'micro_blog_consts'
 require File.join(File.dirname(__FILE__), 'micro_blog_consts')
 
+# This piece of software is released under the
+# Lesser GNU General Public License version 3.
+#
+# Copyright (c) 2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com>
+#
+#
+# Follow me on Twitter or Identi.ca, where you'll find me as @dagobart but
+# under the first name/last name pseudonyme A.F.
+#
+# Suggestions? Please let me know.
+
 class MicroBlogConnector
   def initialize(config_file = DEFAULT_CONFIG_FILE)
     @account_data = YAML::load(File.open(config_file))
