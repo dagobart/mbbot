@@ -115,7 +115,7 @@ your choice.
 fail whales +my-bot.yaml+ is your place to go to switch to an alternative
 service.
 
-=== Areas of the credentials file(s)
+=== Sections of the credentials file(s)
 
 The +twitter+ and +identica+ blocks are designed similarly:
 * Each features a user and a password field. Enter here the nick name of your
