@@ -82,7 +82,8 @@ class MicroBlogMessagingIO
         # bot from chatting with itself.
         bot_name = @connector.username
         sender_name = reply.user.screen_name
-        if (/^@#{bot_name}/ =~ msg) && !(sender_name == bot_name) then # FIXME: add tests for both of these
+
+        if (/^@#{bot_name}/ =~ msg) && !(sender_name == bot_name) then # FIXME: add tests for both of these conditions
           # take side-note(s):
           id = reply.id.to_i
           latest_message_id = id if (id > latest_message_id)
@@ -95,6 +96,8 @@ class MicroBlogMessagingIO
 				     'text' => msg,
 				  'user_id' => reply.user.id
 			    }
+        # else
+        #  puts "'#{msg}'"
         end
       end
       # puts latest_replies.pretty_inspect
@@ -109,4 +112,6 @@ class MicroBlogMessagingIO
     yaml_file.write(@latest_tweeds.to_yaml)
     yaml_file.close
   end
+
+  alias_method :persist, :shutdown
 end

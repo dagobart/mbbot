@@ -17,6 +17,10 @@ require (main_dir + 'micro_blog_messaging_io')
 class MicroBlogBot
   def initialize
     @shutdown = false
+    puts "To shut down the bot, @dagobart must send 'shutdown' to @logbot."
+    puts "Alternatively, on SIGINT, the bot will forget that it already"
+    puts "processed the most recent received messages and re-process them"
+    puts "the next time (and annoy followers by that).", ''
 
     @connector =
          MicroBlogConnector.new( VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN )
@@ -32,19 +36,23 @@ class MicroBlogBot
     		      'time?' => 'For getting to know the current time, following @timebot might be helpful. (That one\'s *not* by @dagobart.)',
     		    } # note: all hash keys must be lower case
 
+    puts @friending.follower_stats
+#    catch_up_with_followers
+  end
+
+  def catch_up_with_followers
     begin
-      puts @friending.follower_stats
 
         # be nice to new followers:
         @friending.new_followers.each do |new_follower|
           @talk.say("@#{ new_follower }: Welcome! Thanks for following me. If you've got any questions, try '@#{ @connector.username } help'. Note: I'm not always online.")
-        end # FIXME: + add test for this
+        end
 
       @friending.catch_up_with_followers
     rescue Twitter::CantConnect
       puts @connector.errmsg(Twitter::CantConnect)
     end
-  end
+  end # FIXME: + add test
 
   def operate
     progress_message = nil
@@ -56,7 +64,9 @@ class MicroBlogBot
     end
 
     while (!@shutdown) do
+      catch_up_with_followers
       process_latest_received
+      @talk.persist
       sleep 15
     end
   end
@@ -93,7 +103,7 @@ class MicroBlogBot
     command = text.strip.downcase
     @shutdown = (command == 'shutdown') && (screen_name == 'dagobart')
     if @shutdown then
-      answer = 'Shutting down, master. // @logbot is an #LGPL3 #chat #bot for micro-blogging services such as #Twitter and #Identica.'
+      answer = 'Shutting down, master. // @logbot is @dagobart\'s #LGPL3 #chat #bot for micro-blogging services such as #Twitter and #Identica.'
     else
       answer = @bot_commands[command]
     end
@@ -102,9 +112,14 @@ class MicroBlogBot
 
     answer = "#{answer[0,136]}..." if answer.length > 140
 
-    @talk.reply(answer, msg_id, user_id)
+    msg = @talk.reply(answer, msg_id, user_id)
     puts answer # help//support us learn about new developments in our
-  end		# relationships to our followees
+     		# relationships to our followees
+
+    # avoid, the next time the bot will gets launched, it includes its own
+    # latest reply to the essages it's goig to evaluate:
+    @talk.latest_message_received = msg.id
+  end
 
   # actually, I didn't grasp Ruby finalizing. If you do, feel free to
   # implement a better solution than this need to call shutdown explicitly
@@ -120,7 +135,7 @@ bot.shutdown
 
 
 # todo:
-# + create perma-runnable version
+# + host bot
 # + if possible and useful, allow +block+s as values for the @bot_commands
 #   hash, so developing own derivate bots would become dead-simple: Just
 #   inherit your bot, then change the commands hash as you like.
