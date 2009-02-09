@@ -32,6 +32,10 @@ class MicroBlogMessagingIO
     @connection.update(msg)
   end
 
+  def destroy(message_id)
+    @connection.destroy(message_id)
+  end # fixme: add test
+
   # chances are that Twitter needs both pieces of data, in_reply_to_status_id
   # and in_reply_to_user_id to get the message threading right. (You can
   # verify that by having a look at the look of the bot's replies within its
@@ -47,12 +51,6 @@ class MicroBlogMessagingIO
     else
       say(msg)
     end
-  end
-
-  def shutdown
-    yaml_file = File.open( LATEST_TWEED_ID_PERSISTENCY_FILE, 'w' )
-    yaml_file.write(@latest_tweeds.to_yaml)
-    yaml_file.close
   end
 
   def latest_message_received
@@ -104,5 +102,11 @@ class MicroBlogMessagingIO
     self.latest_message_received = latest_message_id if perform_latest_message_id_update
 
     return latest_replies
+  end
+
+  def shutdown
+    yaml_file = File.open( LATEST_TWEED_ID_PERSISTENCY_FILE, 'w' )
+    yaml_file.write(@latest_tweeds.to_yaml)
+    yaml_file.close
   end
 end

@@ -77,8 +77,8 @@ LATEST_TWEED_ID_PERSISTENCY_FILE = config_dir + 'latest_tweeds.yaml'
 
 MISSING_FEATURES =
     {
-      'identica' => ['destroy', 'follow', 'leave'],
-       'twitter' => ['destroy'] # FIXME: fix destroy()
+      'identica' => ['follow', 'leave'],
+      'twitter'  => []
     }
 POSSIBLE_SHORTFALLS = MISSING_FEATURES.values.flatten.uniq
 

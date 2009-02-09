@@ -46,9 +46,8 @@ class MicroBlogBot
 
   def operate
     progress_message = nil
-#       progress_message = 'Just learned how to ...'
-#       progress_message = 'Just got registered to sourceforge.net/. In other words: Soon I might be free (LGPL 3) for everyone. #Identica #chat #bot'
-#     @connector.connection.destroy(@talk.say('test').id)
+    # progress_message = 'Just learned how to ...'
+    # @talk.destroy(@talk.say('test').id)
     if progress_message
       msg = @talk.say(progress_message)
       puts msg.id # so we could delete it manually any later
@@ -61,7 +60,7 @@ class MicroBlogBot
     begin
 
       @talk.get_latest_replies.each do |msg|
-        echo_back(msg)
+        answer_message(msg)
       end
 
     rescue Twitter::CantConnect
@@ -79,7 +78,7 @@ class MicroBlogBot
   #   its own messages over and over again. Therefore, to avoid such, this
   #   method quits as soon as we realize we are about to talk to ourselves,
   #   i.e. the bot is going to talk to itself.
-  def echo_back(msg)
+  def answer_message(msg)
         user_id = msg['user_id']; return if user_id == @connector.user_id # for identica
     screen_name = msg['screen_name']
          msg_id = msg['id']
@@ -111,11 +110,12 @@ bot.shutdown
 
 
 # todo:
-# + enable message destruction
-#   + make message/reply tests to immediately clean up after themselves
 # + create perma-runnable version
+# + if possible and useful, allow +block+s as values for the @bot_commands
+#   hash, so developing own derivate bots would become dead-simple: Just
+#   inherit your bot, then change the commands hash as you like.
+#   + intensify parsing via inheritant
 # + add tests for MicroBlogBot
-# + purge all those test messages caused so far
 # + Don't attempt to follow back any users whose accounts are under Twitter
 #   investigation, such as @michellegggssee.
 # + make sure that if users change their screen names, nothing is going to
@@ -130,7 +130,4 @@ bot.shutdown
 # + read documentation of jnunemaker's Twitter gem/ask him whether or not
 #   he'd like it if I'd contribute any
 # + join forces with other ~Twitter bots' developers
-# + if possible and useful, allow +block+s as values for the @bot_commands
-#   hash, so developing own derivate bots would become dead-simple: Just
-#   inherit your bot, then change the commands hash as you like.
-#   + intensify parsing via inheritant
+# + delete old 'help' responses after a while, say a few days
