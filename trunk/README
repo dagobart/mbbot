@@ -24,28 +24,21 @@ Anyways, here's what I know for sure what you need to get the bot run:
 
 === Patching gem twitter 0.4.1
 
-Twitter and Identica, both support message threading -- that is to announce
-to the underlying micro-blogging service what message your [bot's] answer is
-a response to. Unfortunately, @jnunemaker's twitter gem v0.4.1 (which I used
-to develop this here set of libraries) does not support that feature.
+During development I stumbled upon some minor flaws in the underlying Twitter
+gem the micro-blogging bot uses. While the flaws are there, the bot may not
+work properly in all its aspects.
 
-I dropped him a line on that issue, but did not get a response. So I don't
-know whether or not he might include my modification to future versions of
-his twitter gem.
+As there's apparently not yet any new version of the Twitter out yet, I
+include patches for that gem. So prior to launching the bot you need to make
+sure the patch is in place. You do so by actually patching the Twitter gem.
 
-However, the tests of the bot's libraries depend on that the feature is
-there. Hence, the modification needs to get applied first.
-
-
-It's only a single line of code that needs to be included. However, to ease
-this task to you, I include a patch:
 
 In patches/gems/twitter-0.4.1/lib/twitter/ there is a file named
-base.rb.diff. That is the patch. You apply it by copying it to where the
+base.wrs.diff. That is the patch. You apply it by copying it to where the
 Twitter gem's base.rb file resides (helpful: locate
 twitter-0.4.1/lib/twitter/). Then you execute this command:
 
-	$ patch base.rb base.rb.diff
+	$ patch base.rb base.wrs.diff
 
 And that's it.
 
