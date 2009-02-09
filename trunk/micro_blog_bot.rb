@@ -16,6 +16,8 @@ require (main_dir + 'micro_blog_messaging_io')
 
 class MicroBlogBot
   def initialize
+    @shutdown = false
+
     @connector =
          MicroBlogConnector.new( VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN )
     @friending = MicroBlogFriending.new(@connector)
@@ -53,7 +55,10 @@ class MicroBlogBot
       puts msg.id # so we could delete it manually any later
     end
 
-    process_latest_received
+    while (!@shutdown) do
+      process_latest_received
+      sleep 15
+    end
   end
 
   def process_latest_received
@@ -86,7 +91,12 @@ class MicroBlogBot
            text = msg['text'];       text.sub!(/^@logbot\s+/, '')
 
     command = text.strip.downcase
-    answer = @bot_commands[command]
+    @shutdown = (command == 'shutdown') && (screen_name == 'dagobart')
+    if @shutdown then
+      answer = 'Shutting down, master. // @logbot is an #LGPL3 #chat #bot for micro-blogging services such as #Twitter and #Identica.'
+    else
+      answer = @bot_commands[command]
+    end
     answer = "Don't know how to handle your #{ timestamp } request  '#{ text }'" unless answer
     answer = "@#{ screen_name }: #{ answer }"
 
