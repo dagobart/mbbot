@@ -24,28 +24,21 @@ Anyways, here's what I know for sure what you need to get the bot run:
 
 === Patching gem twitter 0.4.1
 
-Twitter and Identica, both support message threading -- that is to announce
-to the underlying micro-blogging service what message your [bot's] answer is
-a response to. Unfortunately, @jnunemaker's twitter gem v0.4.1 (which I used
-to develop this here set of libraries) does not support that feature.
+During development I stumbled upon some minor flaws in the underlying Twitter
+gem the micro-blogging bot uses. While the flaws are there, the bot may not
+work properly in all its aspects.
 
-I dropped him a line on that issue, but did not get a response. So I don't
-know whether or not he might include my modification to future versions of
-his twitter gem.
+As there's apparently not yet any new version of the Twitter out yet, I
+include patches for that gem. So prior to launching the bot you need to make
+sure the patch is in place. You do so by actually patching the Twitter gem.
 
-However, the tests of the bot's libraries depend on that the feature is
-there. Hence, the modification needs to get applied first.
-
-
-It's only a single line of code that needs to be included. However, to ease
-this task to you, I include a patch:
 
 In patches/gems/twitter-0.4.1/lib/twitter/ there is a file named
-base.rb.diff. That is the patch. You apply it by copying it to where the
+base.wrs.diff. That is the patch. You apply it by copying it to where the
 Twitter gem's base.rb file resides (helpful: locate
 twitter-0.4.1/lib/twitter/). Then you execute this command:
 
-	$ patch base.rb base.rb.diff
+	$ patch base.rb base.wrs.diff
 
 And that's it.
 
@@ -115,7 +108,7 @@ your choice.
 fail whales +my-bot.yaml+ is your place to go to switch to an alternative
 service.
 
-=== Areas of the credentials file(s)
+=== Sections of the credentials file(s)
 
 The +twitter+ and +identica+ blocks are designed similarly:
 * Each features a user and a password field. Enter here the nick name of your
@@ -171,6 +164,12 @@ set +twitter+ to +false+ once it nags again, and develop against Identica
 only, for a while. Just make sure you re-enable it later and run your tests
 against Twitter too.
 
+= Benefits
+* All base classes are diligently tested and girdled with tests, therefore if
+  modifications are going to break anything, you will know quickly.
+* Simple command and answer bots can be done in a matter of minutes, just by
+  modifying the +@commands+ hash of +MicroBlogBot+.
+
 = Known shortcomings
 
 * Currently, the bot does not run permanently but runs a single cycle only,
@@ -179,8 +178,7 @@ against Twitter too.
   during tests don't get cleaned up afterwards. This could annoy followers of
   your bot. (My bot lost four of the due to test messages, so far.) However,
   you could take your chances and run tests only when your bot's followers
-are
-  offline.
+  are offline.
 * Communicating by direct messages is not yet implemented.
 * In case, Twitter temporarily blacklists our IP address we will run into it
   without any preventive measures.
@@ -190,11 +188,10 @@ are
 * It's untested what might happen once a followee decides to change their
   nick name.
 
-= Benefits
-* All base classes are diligently tested and girdled with tests, therefore if
-  modifications are going to break anything, you will know quickly.
-* Simple command and answer bots can be done in a matter of minutes, just by
-  modifying the +@commands+ hash of +MicroBlogBot+.
+= Author
+
+This micro-blogging chat bot mini-framework was developed in January/February
+2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com> aka @dagobart aka A.F.
 
 = Contribute to the MicroBlogBot framework
 
@@ -206,4 +203,4 @@ the files to a gem.
 However, I'd be glad to see just any contribution of yours to this here
 project.
 
-Looking forward to hear from you. Just send a mail to helbrecht at gmx. net
+Looking forward to hear from you. Just send a mail.

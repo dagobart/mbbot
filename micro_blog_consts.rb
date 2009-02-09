@@ -1,3 +1,14 @@
+# This piece of software is released under the
+# Lesser GNU General Public License version 3.
+#
+# Copyright (c) 2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com>
+#
+#
+# Follow me on Twitter or Identi.ca, where you'll find me as @dagobart but
+# under the first name/last name pseudonyme A.F.
+#
+# Suggestions? Please let me know.
+
 # After tons of hassles with disrupted Ruby/Rails/RubyGems installations --
 # http://is.gd/hvM9 -- I gave in and gave another Debian Ruby/Rails a try,
 # that is Debian Lenny's Ruby. Currently -- that is just before release of
@@ -66,8 +77,8 @@ LATEST_TWEED_ID_PERSISTENCY_FILE = config_dir + 'latest_tweeds.yaml'
 
 MISSING_FEATURES =
     {
-      'identica' => ['destroy', 'follow', 'leave'],
-       'twitter' => ['destroy'] # FIXME: fix destroy()
+      'identica' => ['follow', 'leave'],
+      'twitter'  => []
     }
 POSSIBLE_SHORTFALLS = MISSING_FEATURES.values.flatten.uniq
 

@@ -1,6 +1,17 @@
 # require 'micro_blog_friending'
 require File.join(File.dirname(__FILE__), 'micro_blog_friending')
 
+# This piece of software is released under the
+# Lesser GNU General Public License version 3.
+#
+# Copyright (c) 2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com>
+#
+#
+# Follow me on Twitter or Identi.ca, where you'll find me as @dagobart but
+# under the first name/last name pseudonyme A.F.
+#
+# Suggestions? Please let me know.
+
 class MicroBlogMessagingIO
   # Note:
   # Instead of re-using the login credentials file named by
@@ -21,6 +32,10 @@ class MicroBlogMessagingIO
     @connection.update(msg)
   end
 
+  def destroy(message_id)
+    @connection.destroy(message_id)
+  end # fixme: add test
+
   # chances are that Twitter needs both pieces of data, in_reply_to_status_id
   # and in_reply_to_user_id to get the message threading right. (You can
   # verify that by having a look at the look of the bot's replies within its
@@ -36,12 +51,6 @@ class MicroBlogMessagingIO
     else
       say(msg)
     end
-  end
-
-  def shutdown
-    yaml_file = File.open( LATEST_TWEED_ID_PERSISTENCY_FILE, 'w' )
-    yaml_file.write(@latest_tweeds.to_yaml)
-    yaml_file.close
   end
 
   def latest_message_received
@@ -73,7 +82,8 @@ class MicroBlogMessagingIO
         # bot from chatting with itself.
         bot_name = @connector.username
         sender_name = reply.user.screen_name
-        if (/^@#{bot_name}/ =~ msg) && !(sender_name == bot_name) then # FIXME: add tests for both of these
+
+        if (/^@#{bot_name}/ =~ msg) && !(sender_name == bot_name) then # FIXME: add tests for both of these conditions
           # take side-note(s):
           id = reply.id.to_i
           latest_message_id = id if (id > latest_message_id)
@@ -86,6 +96,8 @@ class MicroBlogMessagingIO
 				     'text' => msg,
 				  'user_id' => reply.user.id
 			    }
+        # else
+        #  puts "'#{msg}'"
         end
       end
       # puts latest_replies.pretty_inspect
@@ -94,4 +106,12 @@ class MicroBlogMessagingIO
 
     return latest_replies
   end
+
+  def shutdown
+    yaml_file = File.open( LATEST_TWEED_ID_PERSISTENCY_FILE, 'w' )
+    yaml_file.write(@latest_tweeds.to_yaml)
+    yaml_file.close
+  end
+
+  alias_method :persist, :shutdown
 end
