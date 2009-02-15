@@ -136,10 +136,31 @@ In any of the credentials files mentioned above, you are free to delete the
 blocks you don't need. Essential are only the +account+ block and that
 service block the +account+ block+ refers to.
 
+== Get a first impression Launch & Shutdown
+
+Once you're done with configuring your +my-bot.yaml+ file, you'ready to launch
+the bot. To do so, call micro_blog_bot.rb this way:
+
+	$ ruby micro_blog_bot.rb
+
+Once launched, you can interact with the bot through the micro-blogging
+service chosen. For example, try
+
+	@yourbotname help
+
+assuming your bot's micro-blogging service's account nick name is
++yourbotname+.
+
+To shut down, give
+
+	@yourbotname shutdown
+
+through the service.
+
 == Dealing with down times of a service
 
 Especially when running the test suite against Twitter it is rather likely
-your current IP address will be blacklisted for awhile: I very often
+your current IP address will be blacklisted for a while: I very often
 experienced that the first test suite run went through quite well, and then
 testing a minor change just a few minutes later made #400 errors going off
 all over the place.

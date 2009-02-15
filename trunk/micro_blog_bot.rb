@@ -37,7 +37,6 @@ class MicroBlogBot
     		    } # note: all hash keys must be lower case
 
     puts @friending.follower_stats
-#    catch_up_with_followers
   end
 
   def catch_up_with_followers
@@ -67,7 +66,7 @@ class MicroBlogBot
       catch_up_with_followers
       process_latest_received
       @talk.persist
-      sleep 15
+      sleep 75 # Twitter suggests 60s: http://is.gd/j15G -- 15s gets us blacklisted on Twitter
     end
   end
 
@@ -135,7 +134,10 @@ bot.shutdown
 
 
 # todo:
-# + host bot
+# + create gem
+#   + check gem in to the usual gems repository
+#   + announce gem
+# + present the framework at rurug
 # + if possible and useful, allow +block+s as values for the @bot_commands
 #   hash, so developing own derivate bots would become dead-simple: Just
 #   inherit your bot, then change the commands hash as you like.
@@ -156,3 +158,6 @@ bot.shutdown
 #   he'd like it if I'd contribute any
 # + join forces with other ~Twitter bots' developers
 # + delete old 'help' responses after a while, say a few days
+# . summed up the lessons learned at: http://is.gd/j7T6
+# . terminology questions: followee, tweed, Twitter-compatibility, reply
+# . needed to patch underlaying Twitter gem

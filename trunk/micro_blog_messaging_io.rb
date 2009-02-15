@@ -86,7 +86,7 @@ class MicroBlogMessagingIO
         if (/^@#{bot_name}/ =~ msg) && !(sender_name == bot_name) then # FIXME: add tests for both of these conditions
           # take side-note(s):
           id = reply.id.to_i
-          latest_message_id = id if (id > latest_message_id)
+          latest_message_id = id if (id > latest_message_id.to_i)
 
           # perform actual collect:
           latest_replies << {
