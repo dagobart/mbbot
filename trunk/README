@@ -80,12 +80,14 @@ and easily understood. As an example, here's the original twitterbot.yaml:
 
 
         twitter:
-          peer: dagobart    # testing needs a second user to bond with
-          user: twitterbot
+          peer: dagobart    	# testing needs a second user to bond with
+          supervisor: dagobart	# the user who is allowed to shut down the bot
+	  user: twitterbot
           password: secret
 
         identica:
           peer: dagobart
+          supervisor: dagobart
           user: identicabot
           password: secret
           use_alternative_api: 'identi.ca/api'
@@ -119,6 +121,10 @@ The +twitter+ and +identica+ blocks are designed similarly:
   Identica, -- by any account you control: If you'd run your tests against
   @dagobart, it would flood my replies, and I might have no chance to ever
   get rid of those test message the tests of your bot create.
+* The +supervisor+ field enables you to control your bot online via an
+  alternative account, say your common one. "Control" currently means that
+  you can initiate shutting down your bot online. If you keep this field
+  clear, just everyone can shutdown your bot.
 * On +identica+, there is an additional field, +use_alternative_api+. This is
   for telling the bot, which URL to talk to to interact with any
   micro-blogging service other than Twitter itself. So, Identica has its API
@@ -126,9 +132,9 @@ The +twitter+ and +identica+ blocks are designed similarly:
 
 Actually, this +use_alternative_api+ field enables you to make use of
 whatever alternative micro-blogging service you might want to use: Just copy
-the +identica+ block, rename it appropriately, update login and peer fields,
-and the +use_alternative_api+ field. Finally, set +service+ in the +account+
-block to your new service.
+the +identica+ block, rename it appropriately, update login, peer and
+supervisor fields, and the +use_alternative_api+ field. Finally, set
++service+ in the +account+ block to your new service.
 
 === Feel free to delete
 

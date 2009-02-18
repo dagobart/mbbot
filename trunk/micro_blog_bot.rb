@@ -16,24 +16,25 @@ require (main_dir + 'micro_blog_messaging_io')
 
 class MicroBlogBot
   def initialize
-    @shutdown = false
-    puts "To shut down the bot, @dagobart must send 'shutdown' to @logbot."
-    puts "Alternatively, on SIGINT, the bot will forget that it already"
-    puts "processed the most recent received messages and re-process them"
-    puts "the next time (and annoy followers by that).", ''
-
     @connector =
          MicroBlogConnector.new( VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN )
     @friending = MicroBlogFriending.new(@connector)
     @talk = MicroBlogMessagingIO.new(@connector)
 
+    @shutdown = false
+    puts "To shut down the bot, @#{@connector.supervisor} must issue 'shutdown' to @logbot."
+    puts "Alternatively, on SIGINT, the bot will forget that it already"
+    puts "processed the most recent received messages and re-process them"
+    puts "the next time (and annoy followers by that).", ''
+
     @bot_name = @connector.username
     @bot_commands = {
     		      'about' => "@#{ @bot_name } is a #chat #bot built by @dagobart in #Ruby on top of @jnunemaker's #Twitter and #Identica gem. Want to join development?",
-    		      'help'  => 'You may aim any of these commands at me: about help ping time?',
+    		      'help'  => 'You may aim any of these commands at me: about help ping sv time?',
     		      'ping'  => 'Pong',
     		      'ping?' => 'Pong!',
     		      'time?' => 'For getting to know the current time, following @timebot might be helpful. (That one\'s *not* by @dagobart.)',
+    		      'sv' => "@#{@connector.supervisor} is my supervisor.",
     		    } # note: all hash keys must be lower case
 
     puts @friending.follower_stats
@@ -100,9 +101,9 @@ class MicroBlogBot
            text = msg['text'];       text.sub!(/^@logbot\s+/, '')
 
     command = text.strip.downcase
-    @shutdown = (command == 'shutdown') && (screen_name == 'dagobart')
+    @shutdown = (command == 'shutdown') && (screen_name == @connector.supervisor)
     if @shutdown then
-      answer = 'Shutting down, master. // @logbot is @dagobart\'s #LGPL3 #chat #bot for micro-blogging services such as #Twitter and #Identica.'
+      answer = "Shutting down, master. // @#{ @bot_name } is @#{ @connector.supervisor }'s #chat #bot based on @dagobart's #LGPL3 #Twitter / #Identica chatbot framework."
     else
       answer = @bot_commands[command]
     end
