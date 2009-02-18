@@ -25,6 +25,7 @@ class MicroBlogConnector
              @username = @account_data[@service_in_use]['user']
              @password = @account_data[@service_in_use]['password']
             @peer_user = @account_data[@service_in_use]['peer'] # FIXME: add test for this
+           @supervisor = @account_data[@service_in_use]['supervisor'] # FIXME: add test for this
     @use_alternative_api = @account_data[@service_in_use]['use_alternative_api']
 
     @service_lacks = Hash.new
@@ -52,7 +53,7 @@ class MicroBlogConnector
     @user_id = @connection.user(@username).id   # ; puts @user_id; exit
   end # we even could implement a reconnect()--but skip that now
 
-  attr_reader :connection, :user_id, :use_alternative_api, :service_in_use, :service_lacks, :peer_user, :username #, :password
+  attr_reader :connection, :user_id, :use_alternative_api, :service_in_use, :service_lacks, :peer_user, :supervisor, :username #, :password
 
   def errmsg(error)
     if error == Twitter::CantConnect
