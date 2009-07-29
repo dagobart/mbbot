@@ -1,0 +1,233 @@
+= Purpose
+
+This set of libraries and one main program -- micro_blog_bot.rb -- aims at
+simplifying automated response systems ("bots") for popular micro-blogging
+services such as Twitter.com and Identi.ca.
+
+== Setup
+
+After I ran the n-th times into trouble with RubyGems and some updated
+individual gem, I gave the Debian Ruby package another try and -- what
+miracle! -- this time everything looked just fine.
+
+However, the point in mentioning this is to state that I honestly have no
+clue of what Debian's Ruby package may have additionally to it what a
+standard installation of a plain Ruby may have not.
+
+Anyways, here's what I know for sure what you need to get the bot run:
+* The bot relies on the Twitter gem by J. Nunemaker (@jnunemaker), which in
+  turn depends on the gem echoe. So, you need to install the +twitter+ gem
+  and the +echoe+ gem. (I state this explicitely, as +twitter+ 0.4.1 did not
+  make RubyGems to also install +echoe+, in my case.)
+* On Debian, aside of just the main Ruby package, you will need to install
+  the +ruby-dev+ package also, so you'll get +mkmf+.
+
+=== Patching gem twitter 0.4.1
+
+During development I stumbled upon some minor flaws in the underlying Twitter
+gem the micro-blogging bot uses. While the flaws are there, the bot may not
+work properly in all its aspects.
+
+As there's apparently not yet any new version of the Twitter out yet, I
+include patches for that gem. So prior to launching the bot you need to make
+sure the patch is in place. You do so by actually patching the Twitter gem.
+
+
+In patches/gems/twitter-0.4.1/lib/twitter/ there is a file named
+base.wrs.diff. That is the patch. You apply it by copying it to where the
+Twitter gem's base.rb file resides (helpful: locate
+twitter-0.4.1/lib/twitter/). Then you execute this command:
+
+	$ patch base.rb base.wrs.diff
+
+And that's it.
+
+== Bot account data
+
+Sharing your bot's account data is abuse-prone. Therefore, all account data
+this here package shares, is dummy data.
+
+In order to get a bot of your own set up and use-able, you have to do two
+things:
+# Register a user account for your bot with any micro-blogging service with
+  an API compatible to Twitter's one.
+# Make one or more valid login data files.
+
+The first, you perform just the same way as you'd register any other new
+account with the micro-blogging service.
+
+The second, you achieve by just copying these files to some of your own:
+
+	$ cd config/credentials/
+	$ cp twitterbot.yaml my-twitterbot.yaml
+	$ cp twitterbot.yaml my-bot.yaml
+	$ cp twitterbot.yaml my-identibot.yaml
+
+Note, that the 'my-'s are not just an indicator for placeholder file names
+but the names are really meant to feature a prepended 'my-'. If you long for
+alternative names, you of course can create just files with those names, but
+you need to update the micro_blog_consts.rb consts
++VALID_*_CREDENTIALS__DO_NOT_CHECK_IN+ with your alternative names then.
+
+Once you have these three files in place you need to enter valid credentials
+there. Obviously, +my-twitterbot.yaml+ is for Twitter credentials and
++my-identibot.yaml+ for Identica. (Note, that it's +identibot+, not
++identicabot+.) Below, we go into my-bot.yaml, too. The files are structured
+and easily understood. As an example, here's the original twitterbot.yaml:
+
+        account:
+          service: twitter
+
+
+        twitter:
+          peer: dagobart    	# testing needs a second user to bond with
+          supervisor: dagobart	# the user who is allowed to shut down the bot
+	  user: twitterbot
+          password: secret
+
+        identica:
+          peer: dagobart
+          supervisor: dagobart
+          user: identicabot
+          password: secret
+          use_alternative_api: 'identi.ca/api'
+
+As you can see, there is an +account+, a +twitter+ and an +identica+ block in
+here, and you might wonder about the latter, since this file seems to be for
+Twitter credentials. The answer is: As you've seen above, we actually use
+this file as a master for all the other credentials files. Also, it's simply
+handy to be able to switch between different services just by changing the
++service+ line of the +account+ block. Remember the Fail Whales phase of
+Twitter? There you have it. Just switch to the alternative then.
+
+=== How do I get the actual credentials files?
+
+Simple: In your +my-identibot.yaml+, set +service+ to +identica+, in
++my-twitterbot.yaml+ keep it on +twitter+, and in +my-bot.yaml+ just make
+your choice.
+
++my-identibot.yaml+ and +my-twitterbot.yaml+ are for tests, but if Twitter
+fail whales +my-bot.yaml+ is your place to go to switch to an alternative
+service.
+
+=== Sections of the credentials file(s)
+
+The +twitter+ and +identica+ blocks are designed similarly:
+* Each features a user and a password field. Enter here the nick name of your
+  bot and the password for that account.
+* The +peer+ entry is needed for running the test suite, especially the
+  message threading and reply-to tests. Please do me a favor and replace the
+  current +dagobart+ -- which is my regular user account at both, Twitter and
+  Identica, -- by any account you control: If you'd run your tests against
+  @dagobart, it would flood my replies, and I might have no chance to ever
+  get rid of those test message the tests of your bot create.
+* The +supervisor+ field enables you to control your bot online via an
+  alternative account, say your common one. "Control" currently means that
+  you can initiate shutting down your bot online. If you keep this field
+  clear, just everyone can shutdown your bot.
+* On +identica+, there is an additional field, +use_alternative_api+. This is
+  for telling the bot, which URL to talk to to interact with any
+  micro-blogging service other than Twitter itself. So, Identica has its API
+  at +identi.ca/api+, and an other service would have its somewhere else.
+
+Actually, this +use_alternative_api+ field enables you to make use of
+whatever alternative micro-blogging service you might want to use: Just copy
+the +identica+ block, rename it appropriately, update login, peer and
+supervisor fields, and the +use_alternative_api+ field. Finally, set
++service+ in the +account+ block to your new service.
+
+=== Feel free to delete
+
+In any of the credentials files mentioned above, you are free to delete the
+blocks you don't need. Essential are only the +account+ block and that
+service block the +account+ block+ refers to.
+
+== Get a first impression Launch & Shutdown
+
+Once you're done with configuring your +my-bot.yaml+ file, you'ready to launch
+the bot. To do so, call micro_blog_bot.rb this way:
+
+	$ ruby micro_blog_bot.rb
+
+Once launched, you can interact with the bot through the micro-blogging
+service chosen. For example, try
+
+	@yourbotname help
+
+assuming your bot's micro-blogging service's account nick name is
++yourbotname+.
+
+To shut down, give
+
+	@yourbotname shutdown
+
+through the service.
+
+== Dealing with down times of a service
+
+Especially when running the test suite against Twitter it is rather likely
+your current IP address will be blacklisted for a while: I very often
+experienced that the first test suite run went through quite well, and then
+testing a minor change just a few minutes later made #400 errors going off
+all over the place.
+
+On testing against Identica, I never had that. So, you might conclude, then
+why not just test against Identica only? -- The answer is: Identica has other
+flaws. Such as that Identica considers every message you receive from a
+followee to be a message _addressed to_ you. Even, if it does not begin with
+your nick name. So, 'Nice guy that @dagobart' would be considered a message
+_to_ @dagobart on Identica.
+
+So, you don't get around to test against all the services your bot shall run
+at.
+
+To deal with the Twitter rejects, you could either get a new IP every second
+test suite run or wait until you're allowed again. (Which might look lame at
+first, though I did just that sometimes, by continuing to develop, time
+passed..)
+
+However, to shortcut this, I introduced a +SERVICE_IS_AVAILABLE+ hash. Just
+set +twitter+ to +false+ once it nags again, and develop against Identica
+only, for a while. Just make sure you re-enable it later and run your tests
+against Twitter too.
+
+= Benefits
+* All base classes are diligently tested and girdled with tests, therefore if
+  modifications are going to break anything, you will know quickly.
+* Simple command and answer bots can be done in a matter of minutes, just by
+  modifying the +@commands+ hash of +MicroBlogBot+.
+
+= Known shortcomings
+
+* Currently, the bot does not run permanently but runs a single cycle only,
+  every time you launch it manually.
+* There is no way to delete messages. Consecutively, messages generated
+  during tests don't get cleaned up afterwards. This could annoy followers of
+  your bot. (My bot lost four of the due to test messages, so far.) However,
+  you could take your chances and run tests only when your bot's followers
+  are offline.
+* Communicating by direct messages is not yet implemented.
+* In case, Twitter temporarily blacklists our IP address we will run into it
+  without any preventive measures.
+* In case our bot gets followed by a spammer, Twitter finds out before we do
+  and disables the respective account, our bot will try to follow back
+  nevertheless -- and run into an rejection by Twitter.
+* It's untested what might happen once a followee decides to change their
+  nick name.
+
+= Author
+
+This micro-blogging chat bot mini-framework was developed in January/February
+2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com> aka @dagobart aka A.F.
+
+= Contribute to the MicroBlogBot framework
+
+I'd be glad, if you'd contribute some code of your own to this here project
+or if you could fix some of the things I left open to be fixed later or if
+you would add some documentation to the framework. Or if you'd help to roll
+the files to a gem.
+
+However, I'd be glad to see just any contribution of yours to this here
+project.
+
+Looking forward to hear from you. Just send a mail.
