@@ -22,11 +22,20 @@ class MicroBlogMessagingIO
   #
   # If you've got an idea how to improve the latest tweed ID storage, please
   # let me know. -- @dagobart/20090129
-  def initialize(connector)
+  def initialize(connector, skip_tweets_processing_catchup = false)
     @connector = connector
     @connection = @connector.connection
+
     @latest_tweeds = YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
-  end
+    if skip_tweets_processing_catchup
+      @latest_tweeds['inbox_latest'][@connector.service_in_use] = 
+        @connection.timeline(:public, :count => 1).first.id.to_i
+      # FIXME: get rid of above ugly hack (ugly because of direct 
+      #        data access rather than using specialized methods)
+      # fixme: get rid of [everywhere] hard-coded 'inbox_latest'
+      # fixme: add test for the +skip_tweets_processing_catchup+ option
+    end
+  end # fixme: rename "latest_tweeds" to "latest_tweets" (typo)
 
   def say(msg)
     @connection.update(msg)
