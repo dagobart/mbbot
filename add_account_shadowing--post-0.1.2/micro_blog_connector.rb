@@ -1,5 +1,5 @@
 require 'rubygems'
-gem('twitter', '>=0.4.1')
+gem('twitter', '=0.4.1')
 require 'twitter'
 require 'yaml'
 # require 'micro_blog_consts'
@@ -42,8 +42,8 @@ class MicroBlogConnector
         begin
           @connection = Twitter::Base.new(@username, @password, :api_host => @use_alternative_api)
         rescue Twitter::CantConnect
-          raise Twitter::CantConnect,
-        	   "#{config_file}: Failed to connect to micro-blogging service provider '#{@service_in_use}'."
+         raise Twitter::CantConnect,
+               "#{config_file}: Failed to connect to micro-blogging service provider '#{@service_in_use}'."
         end
       else
         @connection = Twitter::Base.new(@username, @password)
