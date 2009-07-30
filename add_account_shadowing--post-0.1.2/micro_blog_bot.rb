@@ -30,7 +30,7 @@ class MicroBlogBot
     puts "the next time (and annoy followers by that).", ''
 
     @bot_commands = {
-    		      'about' => "@#{ @bot_name } is a #chat #bot built by @dagobart in #Ruby on top of @jnunemaker's #Twitter and #Identica gem. Want to join development?",
+    		      'about' => "@#{ @bot_name } is a #chat #bot built by @dagobart in #Ruby on top of J.Nunemaker's #Twitter and #Identica gem. Want to join development? ",
     		      'help'  => 'You may aim any of these commands at me: about help ping sv time?',
     		      'ping'  => 'Pong',
     		      'ping?' => 'Pong!',
@@ -68,7 +68,7 @@ class MicroBlogBot
       catch_up_with_followers
       process_latest_received
       @talk.persist
-      sleep 75 # Twitter suggests 60s: http://is.gd/j15G -- 15s gets us blacklisted on Twitter
+      sleep 75 unless @shutdown # Twitter suggests 60s: http://is.gd/j15G -- 15s gets us blacklisted on Twitter
     end
   end
 
@@ -102,9 +102,12 @@ class MicroBlogBot
            text = msg['text'];       text.sub!(/^@#{@bot_name}\s+/, '')
 
     command = text.strip.downcase
-    @shutdown = (command == 'shutdown') && (screen_name == @connector.supervisor)
+    @shutdown ||= (
+                   (command == 'shutdown') && 
+                   (screen_name == @connector.supervisor)
+                  )
     if @shutdown then
-      answer = "Shutting down, master. // @#{ @bot_name } is @#{ @connector.supervisor }'s #chat #bot based on @dagobart's #LGPL3 #Twitter / #Identica chatbot framework."
+      answer = "Shutting down. // @#{ @bot_name } is @#{ @connector.supervisor }'s #Twitter / #Identica #chatbot based on the #LGPL3 framework at http://is.gd/1TssR/."
     else
       answer = @bot_commands[command]
     end
