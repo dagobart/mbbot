@@ -44,6 +44,8 @@ class MicroBlogMessagingIO
   def destroy(message_id)
     @connection.destroy(message_id)
   end # fixme: add test
+      # FIXME: apparently doesn't work with Twitter gem 0.4.1 for
+      #        identi.ca (anymore?)
 
   # chances are that Twitter needs both pieces of data, in_reply_to_status_id
   # and in_reply_to_user_id to get the message threading right. (You can
@@ -116,6 +118,9 @@ class MicroBlogMessagingIO
     return latest_replies
   end
 
+  # fixme: maybe we could speed up this method by avoiding write access when
+  #        @latest_tweeds didn't change at all in between
+  # fixme: what shall happen in case the file cannot be written, say disk full?
   def shutdown
     yaml_file = File.open( LATEST_TWEED_ID_PERSISTENCY_FILE, 'w' )
     yaml_file.write(@latest_tweeds.to_yaml)

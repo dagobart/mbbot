@@ -22,12 +22,13 @@ class MicroBlogBot
     @talk = MicroBlogMessagingIO.new(@connector)
 
     @shutdown = false
-    puts "To shut down the bot, @#{@connector.supervisor} must issue 'shutdown' to @logbot."
+
+    @bot_name = @connector.username
+    puts "To shut down the bot, @#{@connector.supervisor} must issue 'shutdown' to @#{@bot_name}."
     puts "Alternatively, on SIGINT, the bot will forget that it already"
     puts "processed the most recent received messages and re-process them"
     puts "the next time (and annoy followers by that).", ''
 
-    @bot_name = @connector.username
     @bot_commands = {
     		      'about' => "@#{ @bot_name } is a #chat #bot built by @dagobart in #Ruby on top of @jnunemaker's #Twitter and #Identica gem. Want to join development?",
     		      'help'  => 'You may aim any of these commands at me: about help ping sv time?',
@@ -98,7 +99,7 @@ class MicroBlogBot
     screen_name = msg['screen_name']
          msg_id = msg['id']
       timestamp = msg['created_at']; timestamp.gsub!(/ \+0000/, '')
-           text = msg['text'];       text.sub!(/^@logbot\s+/, '')
+           text = msg['text'];       text.sub!(/^@#{@bot_name}\s+/, '')
 
     command = text.strip.downcase
     @shutdown = (command == 'shutdown') && (screen_name == @connector.supervisor)
