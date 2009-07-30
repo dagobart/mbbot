@@ -26,6 +26,8 @@ class MicroBlogMessagingIO
     @connector = connector
     @connection = @connector.connection
 
+    @bot_name   = @connector.username
+
     @latest_tweeds = YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
     if skip_tweets_processing_catchup
       @latest_tweeds['inbox_latest'][@connector.service_in_use] = 
@@ -88,13 +90,15 @@ class MicroBlogMessagingIO
         # everything to be a reply that just contains '@logbot' (i.e. the
         # bot's user name) _somewhere_ in a message body, so even if
         # completely unrelated, such as '@dagobart, @logbot is great'.
-        # Therefore, we fix that by +(/^@#{bot_name}/ =~ msg)+ below; the
-        # attached +!(sender_name == bot_name)+ is only there to prevent the
+        # Therefore, we fix that by +(/^@#{@bot_name}/ =~ msg)+ below; the
+        # attached +!(sender_name == @bot_name)+ is only there to prevent the
         # bot from chatting with itself.
-        bot_name = @connector.username
         sender_name = reply.user.screen_name
 
-        if (/^@#{bot_name}/ =~ msg) && !(sender_name == bot_name) then # FIXME: add tests for both of these conditions
+        if (
+             (/^@#{@bot_name}/ =~       msg) &&  # FIXME: add tests for both
+            !(sender_name      == @bot_name)     #        of these conditions
+           ) then
           # take side-note(s):
           id = reply.id.to_i
           latest_message_id = id if (id > latest_message_id.to_i)
@@ -117,6 +121,28 @@ class MicroBlogMessagingIO
 
     return latest_replies
   end
+
+  def get_latest_posts
+    posts = @connection.timeline(:user,
+                                :since_id => self.latest_message_received) || []
+    latest_posts = []
+
+    posts.each do |post|
+      sender_name = post.user.screen_name
+
+#      if (sender_name == @bot_name) then # FIXME: add test
+        latest_posts << {
+	  		  'created_at' => post.created_at,
+			          'id' => post.id.to_i,
+			 'screen_name' => sender_name,
+			        'text' => post.text,
+			     'user_id' => post.user.id
+                        }
+      end
+#    end
+
+    return latest_posts
+  end # FIXME: test against Twitter; + add tests
 
   # fixme: maybe we could speed up this method by avoiding write access when
   #        @latest_tweeds didn't change at all in between
