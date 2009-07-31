@@ -22,14 +22,14 @@ class MicroBlogMessagingIO
   #
   # If you've got an idea how to improve the latest tweed ID storage, please
   # let me know. -- @dagobart/20090129
-  def initialize(connector, skip_tweets_processing_catchup = false)
+  def initialize(connector, skip_catchup = false)
     @connector = connector
     @connection = @connector.connection
 
     @bot_name   = @connector.username
 
     @latest_tweeds = YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
-    if skip_tweets_processing_catchup
+    if skip_catchup
       @latest_tweeds['inbox_latest'][@connector.service_in_use] = 
         @connection.timeline(:public, :count => 1).first.id.to_i
       # FIXME: get rid of above ugly hack (ugly because of direct 
@@ -66,21 +66,24 @@ class MicroBlogMessagingIO
     end
   end
 
-  def latest_message_received
+  alias_method :latest_message_received,  :latest_mention_received
+  alias_method :latest_message_received=, :latest_mention_received=
+
+  def latest_mention_received
     @latest_tweeds['inbox_latest'][@connector.service_in_use]
   end
 
-  def latest_message_received=(new_latest_ID)
+  def latest_mention_received=(new_latest_ID)
     @latest_tweeds['inbox_latest'][@connector.service_in_use] = new_latest_ID
   end
 
   # Note: During the collect, we do temp-store the latest received message id
   # to a temporary storage +latest_message_id+ rather than using
-  # latest_message_received(). That's for performance: Using
-  # latest_message_received would involve the use of several hashes rather
+  # latest_mention_received(). That's for performance: Using
+  # latest_mention_received would involve the use of several hashes rather
   # than just updating a single Fixnum.
   def get_latest_replies(perform_latest_message_id_update = true)
-    latest_message_id = self.latest_message_received # 1st received on twitter: 1158336454
+    latest_message_id = self.latest_mention_received # 1st received on twitter: 1158336454
 
       latest_replies = []
       @connection.replies(:since_id => latest_message_id).each do |reply|
@@ -93,6 +96,7 @@ class MicroBlogMessagingIO
         # Therefore, we fix that by +(/^@#{@bot_name}/ =~ msg)+ below; the
         # attached +!(sender_name == @bot_name)+ is only there to prevent the
         # bot from chatting with itself.
+        # fixme: fix/update this note above
         sender_name = reply.user.screen_name
 
         if (
@@ -117,32 +121,14 @@ class MicroBlogMessagingIO
       end
       # puts latest_replies.pretty_inspect
 
-    self.latest_message_received = latest_message_id if perform_latest_message_id_update
+    self.latest_mention_received = latest_message_id if perform_latest_message_id_update
 
     return latest_replies
-  end
-
-  def get_latest_posts
-    posts = @connection.timeline(:user,
-                                :since_id => self.latest_message_received) || []
-    latest_posts = []
-
-    posts.each do |post|
-      sender_name = post.user.screen_name
-
-#      if (sender_name == @bot_name) then # FIXME: add test
-        latest_posts << {
-	  		  'created_at' => post.created_at,
-			          'id' => post.id.to_i,
-			 'screen_name' => sender_name,
-			        'text' => post.text,
-			     'user_id' => post.user.id
-                        }
-      end
-#    end
-
-    return latest_posts
-  end # FIXME: test against Twitter; + add tests
+  end # fixme: + fork method to get_latest_replies() and get_latest_mentions()
+  # fixme: ^ unify get_latest_* methods to a core, e.g. get_latest_messages(), 
+  # and call it by get_latest_replies(), get_latest_PMs(), get_latest_posts(),..
+  # fixme: test against Twitter; + add tests
+  # fixme: + add post/PM id persistency
 
   # fixme: maybe we could speed up this method by avoiding write access when
   #        @latest_tweeds didn't change at all in between
