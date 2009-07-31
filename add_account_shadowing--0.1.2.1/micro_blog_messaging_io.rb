@@ -130,6 +130,39 @@ class MicroBlogMessagingIO
   # fixme: test against Twitter; + add tests
   # fixme: + add post/PM id persistency
 
+  # Mentions are messages that mention the user's screen name pretended by an 
+  # '@' character, e.g. @dagobart.
+  # Replies are a subset of mentions: Mentions that start with the @-prepended
+  # mention of the user's name are replies.
+  def get_latest_mentions(perform_latest_mention_id_update = true)
+    latest_mention_id = self.latest_mention_received # 1st received on Twitter: 1158336454
+
+      latest_mentions = []
+      @connection.replies(:since_id => latest_mention_id).each do |mention|
+      # above     ^^^^^^^ 'replies' actually refers to mentions. Misnomer
+      # of the Twitter 0.4.1 gem, but fault courtesy of twitter.com as they 
+      # replaced replies by mentions.
+
+        # take side-note(s):
+        mention_id = mention.id.to_i
+        latest_mention_id = mention_id if (mention_id > latest_mention_id.to_i)
+
+        # perform actual collect:
+        latest_mentions << {
+			       'created_at' => mention.created_at,
+				       'id' => mention_id,
+			      'screen_name' => mention.user.screen_name,
+				     'text' => mention.text,
+				  'user_id' => mention.user.id
+	                   }
+      end
+      # puts latest_mentions.pretty_inspect
+
+    self.latest_mention_received = latest_mention_id if perform_latest_mention_id_update
+
+    return latest_mentions
+  end
+
   # fixme: maybe we could speed up this method by avoiding write access when
   #        @latest_tweeds didn't change at all in between
   # fixme: what shall happen in case the file cannot be written, say disk full?
