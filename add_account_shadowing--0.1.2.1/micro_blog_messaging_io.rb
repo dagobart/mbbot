@@ -66,9 +66,6 @@ class MicroBlogMessagingIO
     end
   end
 
-  alias_method :latest_message_received,  :latest_mention_received
-  alias_method :latest_message_received=, :latest_mention_received=
-
   def latest_mention_received
     @latest_tweeds['inbox_latest'][@connector.service_in_use]
   end
@@ -76,6 +73,9 @@ class MicroBlogMessagingIO
   def latest_mention_received=(new_latest_ID)
     @latest_tweeds['inbox_latest'][@connector.service_in_use] = new_latest_ID
   end
+
+  alias_method :latest_message_received,  :latest_mention_received
+  alias_method :latest_message_received=, :latest_mention_received=
 
   # Mentions are messages that mention the user's screen name pretended by an 
   # '@' character, e.g. @dagobart.
