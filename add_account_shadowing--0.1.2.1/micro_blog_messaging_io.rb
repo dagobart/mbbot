@@ -77,63 +77,16 @@ class MicroBlogMessagingIO
     @latest_tweeds['inbox_latest'][@connector.service_in_use] = new_latest_ID
   end
 
+  # Mentions are messages that mention the user's screen name pretended by an 
+  # '@' character, e.g. @dagobart.
+  # Replies are a subset of mentions: Mentions that start with the @-prepended
+  # mention of the user's name are replies.
+  #
   # Note: During the collect, we do temp-store the latest received message id
   # to a temporary storage +latest_message_id+ rather than using
   # latest_mention_received(). That's for performance: Using
   # latest_mention_received would involve the use of several hashes rather
   # than just updating a single Fixnum.
-  def get_latest_replies(perform_latest_message_id_update = true)
-    latest_message_id = self.latest_mention_received # 1st received on twitter: 1158336454
-
-      latest_replies = []
-      @connection.replies(:since_id => latest_message_id).each do |reply|
-        msg = reply.text
-
-        # though Twitter handles replies correctly, identi.ca falsely claims
-        # everything to be a reply that just contains '@logbot' (i.e. the
-        # bot's user name) _somewhere_ in a message body, so even if
-        # completely unrelated, such as '@dagobart, @logbot is great'.
-        # Therefore, we fix that by +(/^@#{@bot_name}/ =~ msg)+ below; the
-        # attached +!(sender_name == @bot_name)+ is only there to prevent the
-        # bot from chatting with itself.
-        # fixme: fix/update this note above
-        sender_name = reply.user.screen_name
-
-        if (
-             (/^@#{@bot_name}/ =~       msg) &&  # FIXME: add tests for both
-            !(sender_name      == @bot_name)     #        of these conditions
-           ) then
-          # take side-note(s):
-          id = reply.id.to_i
-          latest_message_id = id if (id > latest_message_id.to_i)
-
-          # perform actual collect:
-          latest_replies << {
-			       'created_at' => reply.created_at,
-				       'id' => id,
-			      'screen_name' => sender_name,
-				     'text' => msg,
-				  'user_id' => reply.user.id
-			    }
-        # else
-        #  puts "'#{msg}'"
-        end
-      end
-      # puts latest_replies.pretty_inspect
-
-    self.latest_mention_received = latest_message_id if perform_latest_message_id_update
-
-    return latest_replies
-  end # fixme: + fork method to get_latest_replies() and get_latest_mentions()
-  # fixme: ^ unify get_latest_* methods to a core, e.g. get_latest_messages(), 
-  # and call it by get_latest_replies(), get_latest_PMs(), get_latest_posts(),..
-  # fixme: test against Twitter; + add tests
-  # fixme: + add post/PM id persistency
-
-  # Mentions are messages that mention the user's screen name pretended by an 
-  # '@' character, e.g. @dagobart.
-  # Replies are a subset of mentions: Mentions that start with the @-prepended
-  # mention of the user's name are replies.
   def get_latest_mentions(perform_latest_mention_id_update = true)
     latest_mention_id = self.latest_mention_received # 1st received on Twitter: 1158336454
 
@@ -161,7 +114,21 @@ class MicroBlogMessagingIO
     self.latest_mention_received = latest_mention_id if perform_latest_mention_id_update
 
     return latest_mentions
-  end
+  end # fixme: replace string hash keys by symbol hash keys
+
+  def get_latest_replies(perform_latest_reply_id_update = true)
+    get_latest_mentions(perform_latest_reply_id_update).delete_if { |mention| 
+      (@bot_name        == mention['screen_name']) || 
+      (/^@#{@bot_name}/ !~ mention['text'])
+      # The +!(sender_name == @bot_name)+ condition is there to prevent the 
+      # bot from considering messages issued by itself as replies to it self 
+      # (which might cause soliloquies).
+    }
+  end # fixme: + add tests
+  # fixme: ^ unify get_latest_* methods to a core, e.g. get_latest_messages(), 
+  # and call it by get_latest_replies(), get_latest_PMs(), get_latest_posts(),..
+  # fixme: test against Twitter
+  # fixme: + add post/PM id persistency
 
   # fixme: maybe we could speed up this method by avoiding write access when
   #        @latest_tweeds didn't change at all in between
