@@ -38,16 +38,30 @@ class MicroBlogFriending
     new_followers.each do |follower_screen_name|
       message = "following back #{follower_screen_name}"
       collected_messages += "#{message}\n"
-      puts message
-      follow(follower_screen_name)
+      DBM.open('followbacks') do  |db| 
+        if ((!db[follower_screen_name]) || (db[follower_screen_name].length == 0)) then
+          db[follower_screen_name] = DateTime.now.to_s
+          puts message
+          begin
+          follow(follower_screen_name)
+          rescue Twitter::TwitterError => e
+            puts "We couldn't follow #{follower_screen_name}: #{e.message}"
+          end
+        end
+      end
     end
 
     # leave everyone who left us:
     lost_followers.each do |follower_screen_name|
       message = "leaving #{follower_screen_name}"
       collected_messages += "#{message}\n"
-      puts message
-      leave(follower_screen_name)
+      DBM.open('followerwelcomes') do  |db| 
+        if ((!db[follower_screen_name]) || (db[follower_screen_name].length == 0)) then
+          db[follower_screen_name] = nil
+          puts message
+          leave(follower_screen_name)
+        end
+      end
     end
 
     return collected_messages
@@ -56,14 +70,14 @@ class MicroBlogFriending
       # some 'howto' message,
 
   def follow(user_screen_name)
-    @connection.create_friendship(user_screen_name)
-    @connection.follow(user_screen_name) unless @connector.service_lacks['follow']
+    @connection.friendship_create(user_screen_name)
+#    @connection.follow(user_screen_name) unless @connector.service_lacks['follow']
     # FIXME: just learned that @connection.follow is a misnomer: @connection.follow means: get notified by followee's updates
   end
 
   def leave(user_screen_name)
-    @connection.leave(user_screen_name) unless @connector.service_lacks['leave']
-    @connection.destroy_friendship(user_screen_name)
+    @connection.friendship_destroy(user_screen_name)
+#    @connection.leave(user_screen_name) unless @connector.service_lacks['leave']
     # FIXME: just learned that @connection.leave is a misnomer: @connection.leave means: get no longer notified by leaveee's updates
   end
 
@@ -82,11 +96,31 @@ class MicroBlogFriending
   end
 
   def follower_names
-    user_names(@connection.followers)
+    num_followers = 100
+    counter = 1
+    follower_array = []
+    until num_followers < 100 do
+      query = { "page" => counter }
+      follower_page = @connection.followers(query)
+      num_followers = follower_page.length
+      follower_array = follower_array + follower_page
+      counter = counter + 1
+    end
+    user_names(follower_array)
   end
 
   def friend_names
-    user_names(@connection.friends)
+    num_friends = 100
+    counter = 1
+    friend_array = []
+    until num_friends < 100 do
+      query = { "page" => counter }
+      friend_page = @connection.friends(query)
+      num_friends = friend_page.length
+      friend_array = friend_array + friend_page
+      counter = counter + 1
+    end
+    user_names(friend_array)
   end
 
   def user_names(users)

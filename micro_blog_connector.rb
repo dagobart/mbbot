@@ -31,7 +31,7 @@ class MicroBlogConnector
     @service_lacks = Hash.new
     POSSIBLE_SHORTFALLS.each do |possible_shortfall|
       current_service_lacks_anything = (MISSING_FEATURES[service_in_use.downcase] != nil)
-      @service_lacks[possible_shortfall] = (MISSING_FEATURES[service_in_use.downcase].find_index(possible_shortfall) != nil) if current_service_lacks_anything
+ #     @service_lacks[possible_shortfall] = (MISSING_FEATURES[service_in_use.downcase].find_index(possible_shortfall) != nil) if current_service_lacks_anything
     end
 
     # ensure we're not using some intendedly invalid credentials:
@@ -46,7 +46,8 @@ class MicroBlogConnector
         	   "#{config_file}: Failed to connect to micro-blogging service provider '#{@service_in_use}'."
         end
       else
-        @connection = Twitter::Base.new(@username, @password)
+	@auth = Twitter::HTTPAuth.new(@username,@password)
+        @connection = Twitter::Base.new(@auth)
       end
 
     # finish initializing read-only variables:

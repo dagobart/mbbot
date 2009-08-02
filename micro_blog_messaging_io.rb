@@ -28,6 +28,16 @@ class MicroBlogMessagingIO
     @latest_tweeds = YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
   end
 
+  def direct_msg(username,msg)
+    begin
+  	  @connection.direct_message_create(username,msg)
+	  rescue Twitter::TwitterError => e
+	    puts "Twitter Error in sending a direct_msg to #{username}: " + e.message
+	    puts "attempting regular reply"
+	    @connection.update(msg)
+    end
+  end
+
   def say(msg)
     @connection.update(msg)
   end
@@ -61,7 +71,15 @@ class MicroBlogMessagingIO
     @latest_tweeds['inbox_latest'][@connector.service_in_use] = new_latest_ID
   end
 
-  # Note: During the collect, we do temp-store the latest received message id
+  def latest_direct_message_received
+    @latest_tweeds['direct_latest'][@connector.service_in_use]
+  end
+
+  def latest_direct_message_received=(new_latest_ID)
+    @latest_tweeds['direct_latest'][@connector.service_in_use] = new_latest_ID
+  end
+
+ # Note: During the collect, we do temp-store the latest received message id
   # to a temporary storage +latest_message_id+ rather than using
   # latest_message_received(). That's for performance: Using
   # latest_message_received would involve the use of several hashes rather
@@ -105,6 +123,50 @@ class MicroBlogMessagingIO
     self.latest_message_received = latest_message_id if perform_latest_message_id_update
 
     return latest_replies
+  end
+
+  def get_latest_direct_msgs(perform_latest_message_id_update = false)
+    latest_direct_message_id = self.latest_direct_message_received # 1st received on twitter: 1158336454
+
+      latest_direct_msgs = []
+      @connection.direct_messages(:since_id => latest_direct_message_id).each do |direct_msg|
+        msg = direct_msg.text
+
+        # though Twitter handles replies correctly, identi.ca falsely claims
+        # everything to be a reply that just contains '@logbot' (i.e. the
+        # bot's user name) _somewhere_ in a message body, so even if
+        # completely unrelated, such as '@dagobart, @logbot is great'.
+        # Therefore, we fix that by +(/^@#{bot_name}/ =~ msg)+ below; the
+        # attached +!(sender_name == bot_name)+ is only there to prevent the
+        # bot from chatting with itself.
+        bot_name = @connector.username
+        sender_screen_name = direct_msg.sender_screen_name
+        sender_id = direct_msg.sender_id
+
+        if !(sender_screen_name == bot_name) then # FIXME: add tests for both of these conditions
+          # take side-note(s):
+          id = direct_msg.id.to_i
+          if (id > latest_direct_message_id.to_i) then
+            latest_direct_message_id = id 
+          end
+
+          # perform actual collect:
+            latest_direct_msgs << {
+			       'created_at' => direct_msg.created_at,
+				       'id' => id,
+			      'screen_name' => sender_screen_name,
+				     'text' => msg,
+				  'user_id' => sender_id
+			    }
+        # else
+        #  puts "'#{msg}'"
+        end
+      end
+      # puts latest_replies.pretty_inspect
+
+    self.latest_direct_message_received = latest_direct_message_id if perform_latest_message_id_update
+
+    return latest_direct_msgs
   end
 
   def shutdown
