@@ -24,7 +24,7 @@ class MicroBlogBot
     @talk = MicroBlogMessagingIO.new(@connector)
 
     @shutdown = false
-    puts "To shut down the bot, @#{@connector.supervisor} must issue 'shutdown' to @logbot."
+    puts "To shut down the bot, @#{@connector.supervisor} must issue 'shutdown' to the bot."
     puts "Alternatively, on SIGINT, the bot will forget that it already"
     puts "processed the most recent received messages and re-process them"
     puts "the next time (and annoy followers by that).", ''
