@@ -66,7 +66,7 @@ class MicroBlogBot
             if ((!db[new_follower]) || (db[new_follower].length == 0)) then
               db[new_follower] = DateTime.now.to_s
               puts "Sending Welcome message to  #{new_follower}!"
-              @talk.direct_msg(new_follower,"Thx for the follow! '@obgr help' for help, or try '@obgr weather PLACENAME', and get tomorrow or another day's forecast. You can DM me too!")
+              @talk.direct_msg(new_follower,"Thx for the follow! '@#{@bot_name} help' for help, or try '@#{@bot_name} weather PLACENAME', and get tomorrow or another day's forecast. You can DM me too!")
             end
           end
         end
