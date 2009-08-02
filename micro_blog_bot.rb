@@ -74,7 +74,7 @@ class MicroBlogBot
       @friending.catch_up_with_followers
   end # FIXME: + add test
 
-  def operate
+  def operate (waittime = 75)
     progress_message = nil
     # progress_message = 'Just learned how to ...'
     # @talk.destroy(@talk.say('test').id)
@@ -87,7 +87,7 @@ class MicroBlogBot
       catch_up_with_followers
       process_latest_received
       @talk.persist
-      sleep 75 # Twitter suggests 60s: http://is.gd/j15G -- 15s gets us blacklisted on Twitter
+      sleep waittime # Twitter suggests 60s: http://is.gd/j15G -- 15s gets us blacklisted on Twitter
     end
   end
 
@@ -168,32 +168,6 @@ class MicroBlogBot
     @talk.shutdown
   end
 end
-
-begin
-  bot = MicroBlogBot.new
-  bot.operate
-rescue Twitter::TwitterError, Twitter::NotFound, Twitter::Unavailable, Twitter::InformTwitter => e
-  puts "We had a Twitter Error. Sleeping and resetting.\nError: #{e.message}\n"
-  sleep 60
-  retry
-rescue Crack::ParseError => e
-  puts "We had a Parsing Error in the JSON Stream. Sleeping and resetting.\nError: #{e.message}\n"
-  sleep 60
-  retry
-rescue SystemCallError => e
-  puts "We had a SystemCallError Error. Sleeping and resetting.\nError: #{e.message}\n"
-  sleep 60
-  retry
-rescue IOError => e
-  puts "We had an IOError Error. Sleeping and resetting.\nError: #{e.message}\n"
-  sleep 60
-  retry
-rescue Timeout::Error => e
-  puts "We had a Timeout Error. Sleeping and resetting.\nError: #{e.message}\n"
-  sleep 60
-  retry
-end
-bot.shutdown
 
 
 # todo:
