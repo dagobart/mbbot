@@ -68,8 +68,10 @@ class MicroBlogBot
       catch_up_with_followers
       process_latest_received
       @talk.persist
-      sleep 75 unless @shutdown # Twitter suggests 60s: http://is.gd/j15G -- 15s gets us blacklisted on Twitter
-      puts "#{ Time.now }: --- MARK ---"
+      unless @shutdown
+        sleep 75  # Twitter suggests 60s: http://is.gd/j15G -- 15s gets us blacklisted on Twitter
+        puts "#{ Time.now }: nothing happens"
+      end
     end
   end
 

@@ -262,15 +262,15 @@ class MicroBlogMessagingIO
 
       if    type == :own_timeline     then
            msgs = process_timeline_messages(
-                    @connection.timeline(:user,    
+                    @connection.timeline(:user,
                                          :since_id => latest_message_id))
       elsif type == :public_timeline  then
            msgs = process_timeline_messages(
-                    @connection.timeline(:public,  
+                    @connection.timeline(:public,
                                          :since_id => latest_message_id))
       elsif type == :friends_timeline then
            msgs = process_timeline_messages(
-                    @connection.timeline(:friends, 
+                    @connection.timeline(:friends,
                                          :since_id => latest_message_id))
       elsif type == :incoming_DMs     then
            msgs = process_private_messages(
@@ -325,11 +325,17 @@ class MicroBlogMessagingIO
   # than just updating a single Fixnum.
   def get_latest_mentions(perform_latest_reply_id_update = true)
     get_latest_messages(perform_latest_reply_id_update, :mentions)
-  end
+  end # fixme: + add tests
 
   def get_latest_replies(perform_latest_reply_id_update = true)
     get_latest_messages(perform_latest_reply_id_update, :replies)
   end # fixme: + add tests
+
+  def get_latest_own_timeline_messages(perform_latest_reply_id_update = true)
+    get_latest_messages(perform_latest_reply_id_update, :own_timeline)
+  end # fixme: + add tests
+  alias_method :get_latest_posts, :get_latest_own_timeline_messages
+  # FIXME: add get_latest_*() for the other possible message streams
 
   # fixme: maybe we could speed up this method by avoiding write access when
   #        @latest_messages didn't change at all in between
