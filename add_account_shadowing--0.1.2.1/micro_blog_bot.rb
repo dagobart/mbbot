@@ -30,7 +30,7 @@ class MicroBlogBot
     puts "the next time (and annoy followers by that).", ''
 
     @bot_commands = {
-    		      'about' => "@#{ @bot_name } is a #chat #bot built by @dagobart in #Ruby on top of J.Nunemaker's #Twitter and #Identica gem. Want to join development? ",
+    		      'about' => "@#{ @bot_name } is a #chat #bot built by @dagobart in #Ruby on top of J.Nunemaker's #Twitter gem. Want to join development? ",
     		      'help'  => 'You may aim any of these commands at me: about help ping sv time?',
     		      'ping'  => 'Pong',
     		      'ping?' => 'Pong!',
@@ -69,6 +69,7 @@ class MicroBlogBot
       process_latest_received
       @talk.persist
       sleep 75 unless @shutdown # Twitter suggests 60s: http://is.gd/j15G -- 15s gets us blacklisted on Twitter
+      puts "#{ Time.now }: --- MARK ---"
     end
   end
 
@@ -120,9 +121,10 @@ class MicroBlogBot
     puts answer # help//support us learn about new developments in our
      		# relationships to our followees
 
-    # avoid, the next time the bot will gets launched, it includes its own
-    # latest reply to the essages it's goig to evaluate:
-    @talk.latest_message_received = msg.id
+    # avoid, that the next time the bot is going to poll for new [= incoming
+    # _or_ outgoing] messages it won't consider its own ones
+#    @talk.latest_message_received = msg.id + 1
+    @talk.latest_post = msg.id.to_i + 1
   end
 
   # actually, I didn't grasp Ruby finalizing. If you do, feel free to
