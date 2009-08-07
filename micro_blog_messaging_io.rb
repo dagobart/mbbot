@@ -1,4 +1,3 @@
-# require 'micro_blog_friending'
 require File.join(File.dirname(__FILE__), 'micro_blog_friending')
 
 # This piece of software is released under the
@@ -16,12 +15,12 @@ class MicroBlogMessagingIO
   # Note:
   # Instead of re-using the login credentials file named by
   # +VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN+, we currently use
-  # latest_tweeds.yaml to persist the ID of the latest received tweed.
+  # +latest_tweeds.yaml+ to persist the IDs of the latest received messages.
   # Reason for not reusing the login credentials file is the risk of
   # accidentally kill that file, thus the login credentials might get lost.
   #
-  # If you've got an idea how to improve the latest tweed ID storage, please
-  # let me know. -- @dagobart/20090129
+  # If you've got an idea how to improve the latest message ID storage,
+  # please let me know. -- @dagobart/20090129
   def initialize(connector)
     @connector = connector
     @connection = @connector.connection
