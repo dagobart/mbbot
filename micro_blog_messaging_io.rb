@@ -64,6 +64,12 @@ class MicroBlogMessagingIO
   end
 
   def latest_message_received
+#    @latest_tweeds['inbox_latest'][@connector.service_in_use]
+    unless @latest_tweeds['inbox_latest'] then
+      @latest_tweeds['inbox_latest'] = 
+        { @connector.service_in_use => 3172250233 } # sample old tweet ID
+    end
+
     @latest_tweeds['inbox_latest'][@connector.service_in_use]
   end
 
@@ -72,6 +78,12 @@ class MicroBlogMessagingIO
   end
 
   def latest_direct_message_received
+#    @latest_tweeds['direct_latest'][@connector.service_in_use]
+    unless @latest_tweeds['direct_latest'] then
+      @latest_tweeds['direct_latest'] = 
+        { @connector.service_in_use => latest_message_received }
+    end
+
     @latest_tweeds['direct_latest'][@connector.service_in_use]
   end
 

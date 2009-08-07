@@ -20,13 +20,37 @@ Anyways, here's what I know for sure what you need to get the bot run:
   and the +echoe+ gem. (I state this explicitely, as +twitter+ 0.4.1 did not
   make RubyGems to also install +echoe+, in my case.)
 * On Debian, aside of just the main Ruby package, you will need to install
-  the +ruby-dev+ package also, so you'll get +mkmf+.
+  the +ruby-dev+ package also, so you'll get +mkmf+, and +libdbm-ruby+ too.
+
+=== Using the right gem
+
+(This section is an update which got inserted for v0.2.0 of the bot. 
+However, I didn't check how it fits to the section before or after it.)
+
+Earlier versions of the bot -- up to version 0.1.2.1 -- relied on the
+twitter gem v0.4.1. That one had an issue and had to be fixed by some
+patching (described in the next section). Also, to make use of the v0.4.1 
+version of the twitter gem you have to edit the +micro_blog_connector.rb+ 
+file to state +gem('twitter', '=0.4.1')+ rather than its current 
++gem('twitter', '>0.4.1')+. But, bot v0.2.0 is capable of using the current 
+v0.6.12 twitter gem, so no patching at all would be necessary.
+
+However, using v0.6.12 of the twitter gem comes at a price: It doesn't 
+support identi.ca anymore, so your bot would be capable of running on 
+Twitter only. And, while you're developing, this is rather uncomfortable, a
+twitter.com allows for no more but 150 accesses _per_ _hour_ . For 
+development, using identi.ca is more convenient as it allows for more 
+frequent accesses.
+
+I suggest using Twitter gem v0.4.1 for developing your bot and then 
+switching to a current version of the gem once your bot goes into 
+'production mode'.
 
 === Patching gem twitter 0.4.1
 
-During development I stumbled upon some minor flaws in the underlying Twitter
-gem the micro-blogging bot uses. While the flaws are there, the bot may not
-work properly in all its aspects.
+During development I stumbled upon some minor flaws in the underlying 
+Twitter gem the micro-blogging bot uses. While the flaws are there, the bot
+may not work properly in all its aspects.
 
 As there's apparently not yet any new version of the Twitter out yet, I
 include patches for that gem. So prior to launching the bot you need to make

@@ -87,12 +87,12 @@ class MicroBlogBot
       catch_up_with_followers
       process_latest_received
       @talk.persist
-      sleep waittime # Twitter suggests 60s: http://is.gd/j15G -- 15s gets us blacklisted on Twitter
+      puts "#{Time.now} -- MARK --"
+      sleep waittime unless @shutdown # Twitter suggests 60s: http://is.gd/j15G -- 15s gets us blacklisted on Twitter
     end
   end
 
   def process_latest_received
-
     sorted_replies = @talk.get_latest_replies.sort{|a,b| a['id'].to_i <=> b['id'].to_i}
     sorted_replies.each do |msg|
       if (@talk.latest_message_received <= msg['id'].to_i) then
@@ -137,13 +137,13 @@ class MicroBlogBot
       predicate = tokens.predicate
     	@shutdown = (command == 'shutdown') && (screen_name == @connector.supervisor)
 	    if @shutdown then
-	      answer = "Shutting down, master. // @#{ @bot_name } is @#{ @connector.supervisor }'s #chat #bot based on @dagobart's #LGPL3 #Twitter / #Identica chatbot framework."
+	      answer = "Shutting down, master. // @#{ @bot_name } is @#{ @connector.supervisor }'s #chat #bot based on @dagobart's #LGPL3 #Twitter (/Identica) chatbot framework."
 	    else
 	      answer = @bot_commands[command] 
 	    end
 	    if (answer.class == Proc) then
 	      answer = answer.call(predicate,msg)
-      elsif (answer) then
+            elsif (answer) then
 	      puts answer + "\n"
 	    else
 	      answer = "Don't know how to handle your request of '#{ text }'"

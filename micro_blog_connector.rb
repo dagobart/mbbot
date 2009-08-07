@@ -1,5 +1,6 @@
 require 'rubygems'
-gem('twitter', '>=0.4.1')
+#gem('twitter', '>=0.4.1')
+gem('twitter', '>0.4.1')
 require 'twitter'
 require 'yaml'
 # require 'micro_blog_consts'
@@ -38,17 +39,17 @@ class MicroBlogConnector
     assess_account_data
 
       # perform actual connect:
-      if use_alternative_api? then
-        begin
-          @connection = Twitter::Base.new(@username, @password, :api_host => @use_alternative_api)
-        rescue Twitter::CantConnect
-          raise Twitter::CantConnect,
-        	   "#{config_file}: Failed to connect to micro-blogging service provider '#{@service_in_use}'."
-        end
-      else
+#      if use_alternative_api? then
+#        begin
+#          @connection = Twitter::Base.new(@username, @password, :api_host => @use_alternative_api)
+#        rescue Twitter::CantConnect
+#          raise Twitter::CantConnect,
+#        	   "#{config_file}: Failed to connect to micro-blogging service provider '#{@service_in_use}'."
+#        end
+#      else
 	@auth = Twitter::HTTPAuth.new(@username,@password)
         @connection = Twitter::Base.new(@auth)
-      end
+#      end
 
     # finish initializing read-only variables:
     @user_id = @connection.user(@username).id   # ; puts @user_id; exit
