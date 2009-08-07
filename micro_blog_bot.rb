@@ -1,9 +1,12 @@
 main_dir = File.join(File.dirname(__FILE__), '')
-require (main_dir + 'micro_blog_connector')
-require (main_dir + 'micro_blog_friending')
-require (main_dir + 'micro_blog_messaging_io')
-require (main_dir + 'Token')
+# require (main_dir + 'micro_blog_connector')
+# require (main_dir + 'micro_blog_friending')
+# require (main_dir + 'micro_blog_messaging_io')
+# require (main_dir + 'Token') # FIXME: rename Token.rb to token.rb
 require 'dbm'
+%w{ Token micro_blog_connector micro_blog_friending micro_blog_messaging_io   }.each do |lib|
+    require(main_dir + lib)
+end
 
 # This piece of software is released under the
 # Lesser GNU General Public License version 3.
@@ -23,20 +26,22 @@ class MicroBlogBot
     @friending = MicroBlogFriending.new(@connector)
     @talk = MicroBlogMessagingIO.new(@connector)
 
+    @bot_name = @connector.username
+    @supervisor = @connector.supervisor
+
     @shutdown = false
-    puts "To shut down the bot, @#{@connector.supervisor} must issue 'shutdown' to the bot."
+    puts "To shut down the bot, @#{@supervisor} must issue 'shutdown' to @#{@bot_name}."
     puts "Alternatively, on SIGINT, the bot will forget that it already"
     puts "processed the most recent received messages and re-process them"
     puts "the next time (and annoy followers by that).", ''
 
-    @bot_name = @connector.username
     @bot_commands = {
-    		      'about' => "Put your about text here",
+    		      'about' => "@#{ @bot_name } is a #chat #bot built by @dagobart in #Ruby on top of J.Nunemaker's #Twitter gem. Want to join development?",
     		      'help'  => lambda { |c,m| self.handle_help_command(c,m) },
     		      'ping'  => 'Pong',
     		      'ping?' => 'Pong!',
     		      'time?' => 'For getting to know the current time, following @timebot might be helpful. (That one\'s *not* by @dagobart.)',
-    		      'sv' => "@#{@connector.supervisor} is my supervisor.",
+    		      'sv' => "@#{@supervisor} is my supervisor.",
     		    } # note: all hash keys must be lower case
 
     puts @friending.follower_stats
@@ -60,18 +65,18 @@ class MicroBlogBot
   end
 
   def catch_up_with_followers
-        # be nice to new followers:
-        @friending.new_followers.each do |new_follower|
-          DBM.open('followerwelcomes') do  |db| 
-            if ((!db[new_follower]) || (db[new_follower].length == 0)) then
-              db[new_follower] = DateTime.now.to_s
-              puts "Sending Welcome message to  #{new_follower}!"
-              @talk.direct_msg(new_follower,"Thx for the follow! '@#{@bot_name} help' for help, or try '@#{@bot_name} weather PLACENAME', and get tomorrow or another day's forecast. You can DM me too!")
-            end
-          end
+    # be nice to new followers:
+    @friending.new_followers.each do |new_follower|
+      DBM.open('followerwelcomes') do  |db| 
+        if ((!db[new_follower]) || (db[new_follower].length == 0)) then
+          db[new_follower] = DateTime.now.to_s
+          puts "Sending Welcome message to  #{new_follower}!"
+          @talk.direct_msg(new_follower,"Thx for the follow! '@#{@bot_name} help' for help, or try '@#{@bot_name} weather PLACENAME', and get tomorrow or another day's forecast. You can DM me too!")
         end
+      end
+    end
         
-      @friending.catch_up_with_followers
+    @friending.catch_up_with_followers
   end # FIXME: + add test
 
   def operate (waittime = 75)

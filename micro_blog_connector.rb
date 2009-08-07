@@ -1,9 +1,8 @@
 require 'rubygems'
-#gem('twitter', '>=0.4.1')
-gem('twitter', '>0.4.1')
+#gem('twitter', '=0.4.1') # for identi.ca support
+gem('twitter', '>0.4.1') # for Twitter support
 require 'twitter'
 require 'yaml'
-# require 'micro_blog_consts'
 require File.join(File.dirname(__FILE__), 'micro_blog_consts')
 
 # This piece of software is released under the
