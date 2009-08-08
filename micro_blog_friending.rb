@@ -70,15 +70,23 @@ class MicroBlogFriending
       # some 'howto' message,
 
   def follow(user_screen_name)
-    @connection.friendship_create(user_screen_name)
-#    @connection.follow(user_screen_name) unless @connector.service_lacks['follow']
-    # FIXME: just learned that @connection.follow is a misnomer: @connection.follow means: get notified by followee's updates
+    if USE_GEM_0_4_1 then
+      @connection.create_friendship(user_screen_name)      
+      @connection.follow(user_screen_name) unless @connector.service_lacks['follow']
+      # FIXME: just learned that @connection.follow is a misnomer: @connection.follow means: get notified by followee's updates
+    else
+      @connection.friendship_create(user_screen_name)
+    end
   end
 
   def leave(user_screen_name)
-    @connection.friendship_destroy(user_screen_name)
-#    @connection.leave(user_screen_name) unless @connector.service_lacks['leave']
-    # FIXME: just learned that @connection.leave is a misnomer: @connection.leave means: get no longer notified by leaveee's updates
+    if USE_GEM_0_4_1 then
+      @connection.leave(user_screen_name) unless @connector.service_lacks['leave']
+      @connection.destroy_friendship(user_screen_name)
+      # FIXME: just learned that @connection.leave is a misnomer: @connection.leave means: get no longer notified by leavee's updates
+    else
+      @connection.friendship_destroy(user_screen_name)
+    end
   end
 
   # Note: +user_names(@connection.followers - @connection.friends)+
@@ -107,7 +115,7 @@ class MicroBlogFriending
       counter = counter + 1
     end
     user_names(follower_array)
-  end
+  end # fixme: not yet tested with gem v0.4.1; for gem v0.4.1 this method consisted of a single line of code: +user_names(@connection.followers)+
 
   def friend_names
     num_friends = 100
@@ -121,7 +129,7 @@ class MicroBlogFriending
       counter = counter + 1
     end
     user_names(friend_array)
-  end
+  end # fixme: not yet tested with gem v0.4.1; for gem v0.4.1 this method consisted of a single line of code: +user_names(@connection.friends)+
 
   def user_names(users)
     users.collect { |user| user.screen_name }
