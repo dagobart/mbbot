@@ -1,9 +1,34 @@
 require 'rubygems'
-#gem('twitter', '=0.4.1') # for identi.ca support
-gem('twitter', '>0.4.1') # for Twitter support
-require 'twitter'
 require 'yaml'
 require File.join(File.dirname(__FILE__), 'micro_blog_consts')
+
+# Unfortunately, the twitter gem supports identi.ca only prior to v0.5.0,
+# therefore we need to use the old gem in case we want our bot to work on
+# identi.ca too. Identi.ca support is tested only for v0.4.1 therefore we
+# use that as 'the old gem':
+#
+# FIXME:
+# Flip +USE_IDENTICA+ to +true+ or +false+ in case either identi.ca (true)
+# or Twitter (false) shall be used. This causes the twitter gem 0.4.1 (for
+# identi.ca) or any later (for Twitter) to be loaded. Although this step can
+# be inferred from what's set up in the credentials YAML file, currently it
+# cannot be automated, unfortunately. (The reason for why it cannot be
+# automated is that I assume if I'd do it within the YAML file examination,
+# the scope of the gem operation would be restricted to that YAML file
+# examination method rather than applying to the whole program. If you've
+# got a patch that fixes this, you're greatly welcome to contribute it!)
+USE_IDENTICA = true
+USE_GEM_0_4_1 = USE_IDENTICA
+
+# '=0.4.1' for identi.ca support, '>0.4.1' for Twitter support
+#
+# If you want to, you could set +USE_GEM_0_4_1+ to +true+ even if
+# you'd set +USE_IDENTICA+ at the same time, so you could run your
+# bot on the 0.4.1 version of the twitter gem with Twitter.
+gem('twitter', USE_GEM_0_4_1 ? '=0.4.1' : '>0.4.1')
+
+require 'twitter'
+
 
 # This piece of software is released under the
 # Lesser GNU General Public License version 3.
@@ -31,24 +56,46 @@ class MicroBlogConnector
     @service_lacks = Hash.new
     POSSIBLE_SHORTFALLS.each do |possible_shortfall|
       current_service_lacks_anything = (MISSING_FEATURES[service_in_use.downcase] != nil)
- #     @service_lacks[possible_shortfall] = (MISSING_FEATURES[service_in_use.downcase].find_index(possible_shortfall) != nil) if current_service_lacks_anything
+      @service_lacks[possible_shortfall] = (MISSING_FEATURES[service_in_use.downcase].find_index(possible_shortfall) != nil) if current_service_lacks_anything
     end
 
     # ensure we're not using some intendedly invalid credentials:
     assess_account_data
 
       # perform actual connect:
-#      if use_alternative_api? then
-#        begin
-#          @connection = Twitter::Base.new(@username, @password, :api_host => @use_alternative_api)
-#        rescue Twitter::CantConnect
-#          raise Twitter::CantConnect,
-#        	   "#{config_file}: Failed to connect to micro-blogging service provider '#{@service_in_use}'."
-#        end
-#      else
-	@auth = Twitter::HTTPAuth.new(@username,@password)
-        @connection = Twitter::Base.new(@auth)
-#      end
+      if use_alternative_api? then
+        unless USE_GEM_0_4_1
+          raise "using an alterenative API but not twitter gem v0.4.1" 
+          # The assumption is that using an alternative API -- declared
+          # by the entries of the credentials YAML file -- together with
+          # a twitter gem > 0.4.1 won't work. Hence, if using an
+          # alternative API, the developer should flip the +USE_IDENTICA+
+          # switch atop of this here file to TRUE, too, then.
+          #
+          # Explanation:
+          # Using a twitter gem > 0.4.1 with the below connection code
+          # won't work since Twitter::Base.new changed its interface//
+          # expected params.
+        end
+
+        begin
+          @connection = Twitter::Base.new(@username, @password, 
+                                          :api_host => @use_alternative_api)
+          rescue Twitter::CantConnect
+           raise Twitter::CantConnect,
+                 "#{config_file}: Failed to connect to micro-blogging service provider '#{@service_in_use}'."
+        end
+
+      # end if use_alternative_api?
+
+      else
+        if USE_GEM_0_4_1 then
+          @connection = Twitter::Base.new(@username, @password)
+        else
+          @auth = Twitter::HTTPAuth.new(@username, @password)
+          @connection = Twitter::Base.new(@auth)
+        end
+      end
 
     # finish initializing read-only variables:
     @user_id = @connection.user(@username).id   # ; puts @user_id; exit
@@ -62,7 +109,7 @@ class MicroBlogConnector
     else
       "something went wrong on #{@service_in_use} with the just before intended action."
     end
-  end
+  end # FIXME: not yet tested: connecting Twitter with a current twitter gem
 
   def use_alternative_api?
     @use_alternative_api != nil

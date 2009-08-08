@@ -4,6 +4,7 @@ This set of libraries and one main program -- micro_blog_bot.rb -- aims at
 simplifying automated response systems ("bots") for popular micro-blogging
 services such as Twitter.com and Identi.ca.
 
+
 == Setup
 
 After I ran the n-th times into trouble with RubyGems and some updated
@@ -22,29 +23,46 @@ Anyways, here's what I know for sure what you need to get the bot run:
 * On Debian, aside of just the main Ruby package, you will need to install
   the +ruby-dev+ package also, so you'll get +mkmf+, and +libdbm-ruby+ too.
 
+
 === Using the right gem
 
 (This section is an update which got inserted for v0.2.0 of the bot. 
 However, I didn't check how it fits to the section before or after it.)
 
 Earlier versions of the bot -- up to version 0.1.2.1 -- relied on the
-twitter gem v0.4.1. That one had an issue and had to be fixed by some
-patching (described in the next section). Also, to make use of the v0.4.1 
-version of the twitter gem you have to edit the +micro_blog_connector.rb+ 
-file to state +gem('twitter', '=0.4.1')+ rather than its current 
-+gem('twitter', '>0.4.1')+. But, bot v0.2.0 is capable of using the current 
-v0.6.12 twitter gem, so no patching at all would be necessary.
+twitter gem v0.4.1. The 0.4.1 version of the twitter gem has an issue 
+and must be patched prior to using it (described in the next section). 
 
-However, using v0.6.12 of the twitter gem comes at a price: It doesn't 
-support identi.ca anymore, so your bot would be capable of running on 
-Twitter only. And, while you're developing, this is rather uncomfortable, a
-twitter.com allows for no more but 150 accesses _per_ _hour_ . For 
-development, using identi.ca is more convenient as it allows for more 
-frequent accesses.
+The current version of the bot works with twitter gem versions after 
+v0.5.0 which doesn't support identi.ca anymore. Therefore if you want 
+your bot to run with identi.ca you've got to use the old 0.4.1 twitter 
+gem. To ease that part on you, there  is a switch in the very few 
+lines of +micro_blog_connector.rb+ you have to flip: In case you want 
+your bot to run on Twitter, turn from +USE_IDENTICA = true+ to 
++USE_IDENTICA = false+. 
 
-I suggest using Twitter gem v0.4.1 for developing your bot and then 
-switching to a current version of the gem once your bot goes into 
-'production mode'.
+To ease this issue is on the todo list, though currently this is the 
+easiest way to achieve the goal to have the framework capable of being 
+used with both Twitter and identica. If you've got a patch to fix the 
+issue, you're welcome to contribute that.
+
+
+==== Why developing with the twitter gem >= v0.5.0 is poor
+The v0.5.0 twitter gem version removed identi.ca support. Subsequent
+versions didn't support identi.ca at least until v0.6.12. Having no 
+identi.ca support implicitly restricts access to Twitter only.
+
+Twitter on the other hand restricts the number of accesses to 150 times 
+_per_ _hour_. During development this is rather inconvenient when you 
+need to try things out. Identi.ca's restrictions are more relaxed.
+
+Therefore, if you want to develop a bot for Twitter, I suggest to 
+develop it against identi.ca first to get it mostly done, then switch 
+to Twitter. -- To avoid fueling identi.ca's ISP costs, it be even 
+more friendly if you'd set up your own copy of identi.ca and develop 
+against that. However, I found the setting up of identi.ca under 
+Debian rather itchy.
+
 
 === Patching gem twitter 0.4.1
 
@@ -65,6 +83,7 @@ twitter-0.4.1/lib/twitter/). Then you execute this command:
 	$ patch base.rb base.wrs.diff
 
 And that's it.
+
 
 == Bot account data
 
@@ -124,6 +143,7 @@ handy to be able to switch between different services just by changing the
 +service+ line of the +account+ block. Remember the Fail Whales phase of
 Twitter? There you have it. Just switch to the alternative then.
 
+
 === How do I get the actual credentials files?
 
 Simple: In your +my-identibot.yaml+, set +service+ to +identica+, in
@@ -133,6 +153,7 @@ your choice.
 +my-identibot.yaml+ and +my-twitterbot.yaml+ are for tests, but if Twitter
 fail whales +my-bot.yaml+ is your place to go to switch to an alternative
 service.
+
 
 === Sections of the credentials file(s)
 
@@ -160,11 +181,13 @@ the +identica+ block, rename it appropriately, update login, peer and
 supervisor fields, and the +use_alternative_api+ field. Finally, set
 +service+ in the +account+ block to your new service.
 
+
 === Feel free to delete
 
 In any of the credentials files mentioned above, you are free to delete the
 blocks you don't need. Essential are only the +account+ block and that
 service block the +account+ block+ refers to.
+
 
 == Get a first impression Launch & Shutdown
 
@@ -186,6 +209,7 @@ To shut down, give
 	@yourbotname shutdown
 
 through the service.
+
 
 == Dealing with down times of a service
 
@@ -215,6 +239,7 @@ set +twitter+ to +false+ once it nags again, and develop against Identica
 only, for a while. Just make sure you re-enable it later and run your tests
 against Twitter too.
 
+
 = Benefits
 * All base classes are diligently tested and girdled with tests, therefore if
   modifications are going to break anything, you will know quickly.
@@ -243,6 +268,7 @@ against Twitter too.
 
 This micro-blogging chat bot mini-framework was developed in January/February
 2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com> aka @dagobart aka A.F.
+
 
 = Contribute to the MicroBlogBot framework
 
