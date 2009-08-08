@@ -26,21 +26,28 @@ class MicroBlogBot
     @friending = MicroBlogFriending.new(@connector)
     @talk = MicroBlogMessagingIO.new(@connector)
 
-    @bot_name = @connector.username
+    @bot_name   = @connector.username
     @supervisor = @connector.supervisor
 
     @shutdown = false
-    puts "To shut down the bot, @#{@supervisor} must issue 'shutdown' to @#{@bot_name}."
+    puts "To shut down the bot, @#{@supervisor} must issue 'shutdown'" + 
+         " to @#{@bot_name}."
     puts "Alternatively, on SIGINT, the bot will forget that it already"
     puts "processed the most recent received messages and re-process them"
     puts "the next time (and annoy followers by that).", ''
 
     @bot_commands = {
-    		      'about' => "@#{ @bot_name } is a #chat #bot built by @dagobart in #Ruby on top of J.Nunemaker's #Twitter gem. Want to join development?",
-    		      'help'  => lambda { |c,m| self.handle_help_command(c,m) },
+    		      'about' => "@#{ @bot_name } is a #chat #bot built" +
+                                 " by @dagobart in #Ruby on top of" +
+                                 " J.Nunemaker's #Twitter gem. Want to" +
+                                 " join development?",
+    		      'help'  => lambda { |c, m| 
+                                           self.handle_help_command(c, m) },
     		      'ping'  => 'Pong',
     		      'ping?' => 'Pong!',
-    		      'time?' => 'For getting to know the current time, following @timebot might be helpful. (That one\'s *not* by @dagobart.)',
+    		      'time?' => 'For getting to know the current time,' + 
+                                 ' following @timebot might be helpful.' + 
+                                 ' (That one\'s *not* by @dagobart.)',
     		      'sv' => "@#{@supervisor} is my supervisor.",
     		    } # note: all hash keys must be lower case
 
@@ -49,9 +56,12 @@ class MicroBlogBot
 
   def handle_help_command(predicate,msg)
     help_commands = {
-      'about' => "Try 'help' for help. Add other Help text here. You can DM me too!",
-      'help' => "Ask for general help with 'help' or get help for commands with 'help CMD'",
-      'ping' => "The simplest of commands - use 'ping' to get a 'pong' response.",
+      'about' => "Try 'help' for help. Add other Help text here. You can" +
+                 " DM me too!",
+      'help'  => "Ask for general help with 'help' or get help for" +
+                  " commands with 'help CMD'",
+      'ping'  => "The simplest of commands - use 'ping' to get a 'pong'" +
+                 " response.",
     }
     tokens = Token::new(predicate)
     command = tokens.next_token
@@ -64,22 +74,35 @@ class MicroBlogBot
     return 'You may aim any of these commands at me: about help ping'
   end
 
+  # be nice to new followers
   def catch_up_with_followers
-    # be nice to new followers:
+    welcome_message = "Welcome! Thanks for the follow! Send" +
+                      " '@#{@bot_name} help' for help. You can DM me too!"
+
     @friending.new_followers.each do |new_follower|
       DBM.open('followerwelcomes') do  |db| 
         if ((!db[new_follower]) || (db[new_follower].length == 0)) then
           db[new_follower] = DateTime.now.to_s
           puts "Sending Welcome message to  #{new_follower}!"
-          @talk.direct_msg(new_follower,"Thx for the follow! '@#{@bot_name} help' for help, or try '@#{@bot_name} weather PLACENAME', and get tomorrow or another day's forecast. You can DM me too!")
+          @talk.direct_msg(new_follower, welcome_message)
         end
       end
     end
         
-    @friending.catch_up_with_followers
+    unless USE_GEM_0_4_1 then
+      @friending.catch_up_with_followers
+    else     # in twitter gem v0.4.1 a Twitter::CantConnect may be raised,
+      begin  #  therefore handle it:
+        @friending.catch_up_with_followers
+      rescue Twitter::CantConnect
+        puts @connector.errmsg(Twitter::CantConnect)
+      end
+    end
   end # FIXME: + add test
 
-  def operate (waittime = 75)
+  # +waittime+: Twitter suggests 60s: http://is.gd/j15G -- 15s gets us
+  #             blacklisted on Twitter
+  def operate(waittime = 75)
     progress_message = nil
     # progress_message = 'Just learned how to ...'
     # @talk.destroy(@talk.say('test').id)
@@ -92,16 +115,26 @@ class MicroBlogBot
       catch_up_with_followers
       process_latest_received
       @talk.persist
-      puts "#{Time.now} -- MARK --"
-      sleep waittime unless @shutdown # Twitter suggests 60s: http://is.gd/j15G -- 15s gets us blacklisted on Twitter
+      unless @shutdown
+        sleep waittime
+        puts "#{ Time.now }: nothing happens"
+      end
     end
-  end
+  end # FIXME: + somewhere add a general output-to-console state() method
 
   def process_latest_received
     sorted_replies = @talk.get_latest_replies.sort{|a,b| a['id'].to_i <=> b['id'].to_i}
     sorted_replies.each do |msg|
       if (@talk.latest_message_received <= msg['id'].to_i) then
-        answer_message(msg)
+        if USE_GEM_0_4_1 then # twitter gem v0.4.1 may raise an error
+          begin
+            answer_message(msg)
+          rescue Twitter::CantConnect
+            puts @connector.errmsg(Twitter::CantConnect)
+          end
+        else
+          answer_message(msg)
+        end
         @talk.latest_message_received = msg['id'].to_i + 1
       else
         puts "Skipping ID: " + msg['id'].to_s + "\t" + msg['text'].to_s + "\n"
@@ -112,7 +145,15 @@ class MicroBlogBot
     sorted_direct_msgs = tdirect_msgs.sort{|a,b| a['id'].to_i <=> b['id'].to_i}
     sorted_direct_msgs.each do |direct_msg|
       if (@talk.latest_direct_message_received <= direct_msg['id'].to_i) then
-        answer_message(direct_msg)
+        if USE_GEM_0_4_1 then # twitter gem v0.4.1 may raise an error
+          begin
+            answer_message(direct_msg)
+          rescue Twitter::CantConnect
+            puts @connector.errmsg(Twitter::CantConnect)
+          end
+        else
+          answer_message(direct_msg)
+        end
         @talk.latest_direct_message_received = direct_msg['id'].to_i + 1
       else
         puts "Skipping ID: " + direct_msg['id'].to_s + "\t" + direct_msg['text'].to_s + "\n"
@@ -136,11 +177,17 @@ class MicroBlogBot
          msg_id = msg['id']
       timestamp = msg['created_at']; timestamp.gsub!(/ \+0000/, '')
            text = msg['text'];       text.sub!(/^@\S+\s+/, '')
+                         # formerly: text.sub!(/^@#{@bot_name}\s+/, '')
 
       tokens = Token::new(text)
       command = tokens.next_token
       predicate = tokens.predicate
-    	@shutdown = (command == 'shutdown') && (screen_name == @connector.supervisor)
+
+    	@shutdown ||= (
+                       (command == 'shutdown') && 
+                       (screen_name == @connector.supervisor)
+                      )
+
 	    if @shutdown then
 	      answer = "Shutting down, master. // @#{ @bot_name } is @#{ @connector.supervisor }'s #chat #bot based on @dagobart's #LGPL3 #Twitter (/Identica) chatbot framework."
 	    else
@@ -153,18 +200,21 @@ class MicroBlogBot
 	    else
 	      answer = "Don't know how to handle your request of '#{ text }'"
 	    end
-	    answer = "@#{ screen_name }: #{ answer }"
+#	    answer = "@#{ screen_name }: #{ answer }" # only for public replies; direct messages AKA non-public replies don't need a prepending '@...:'
 
 	    answer = "#{answer[0,136]}..." if answer.length > 140
 
-	    msg2 = @talk.direct_msg(user_id,answer)
-	    puts answer # help//support us learn about new developments in our
-     		# relationships to our followees
+	    msg2 = @talk.direct_msg(user_id, answer)
+	    puts answer # help//support us learn about new developments in
+     		# our relationships to our followees
 
-    # avoid, the next time the bot will gets launched, it includes its own
-    # latest reply to the essages it's goig to evaluate:
+# line seems to contradict new, sophisticated process_latest_received(),
+# hence (?) dsifry commented this here line of code out:
+#
+#    # avoid, that the next time the bot is going to poll for new messages,
+#    # it won't consider its own ones
 #    @talk.latest_message_received = msg.id
-  end
+  end # FIXME: + make it an option to answer publicly/privately
 
   # actually, I didn't grasp Ruby finalizing. If you do, feel free to
   # implement a better solution than this need to call shutdown explicitly
@@ -175,11 +225,19 @@ class MicroBlogBot
 end
 
 
+# sample code for a minimalist µB bot of your own:
+#
+# bot = MicroBlogBot.new
+# bot.operate
+# bot.shutdown
+#
+# for a more advanced one, extend sample-bot.rb
+
+
 # todo:
 # + create gem
 #   + check gem in to the usual gems repository
 #   + announce gem
-# + present the framework at rurug
 # + if possible and useful, allow +block+s as values for the @bot_commands
 #   hash, so developing own derivate bots would become dead-simple: Just
 #   inherit your bot, then change the commands hash as you like.

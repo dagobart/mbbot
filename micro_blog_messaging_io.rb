@@ -35,7 +35,7 @@ class MicroBlogMessagingIO
 	    puts "attempting regular reply"
 	    @connection.update(msg)
     end
-  end
+  end # FIXME: not yet tested with / adapted to v0.4.1 of the twitter gem
 
   def say(msg)
     @connection.update(msg)
@@ -63,11 +63,10 @@ class MicroBlogMessagingIO
   end
 
   def latest_message_received
-#    @latest_tweeds['inbox_latest'][@connector.service_in_use]
     unless @latest_tweeds['inbox_latest'] then
       @latest_tweeds['inbox_latest'] = 
         { @connector.service_in_use => 3172250233 } # sample old tweet ID
-    end
+    end # fixme: move hard-coded value to the consts file
 
     @latest_tweeds['inbox_latest'][@connector.service_in_use]
   end
@@ -77,7 +76,6 @@ class MicroBlogMessagingIO
   end
 
   def latest_direct_message_received
-#    @latest_tweeds['direct_latest'][@connector.service_in_use]
     unless @latest_tweeds['direct_latest'] then
       @latest_tweeds['direct_latest'] = 
         { @connector.service_in_use => latest_message_received }
