@@ -86,7 +86,7 @@ class MicroBlogConnector
                  "#{config_file}: Failed to connect to micro-blogging service provider '#{@service_in_use}'."
         end
 
-      # end if use_alternative_api?
+      # end-if use_alternative_api?
 
       else
         if USE_GEM_0_4_1 then
@@ -98,7 +98,8 @@ class MicroBlogConnector
       end
 
     # finish initializing read-only variables:
-    @user_id = @connection.user(@username).id   # ; puts @user_id; exit
+    user = @connection.user(@username) # ID determination apparently needs to be performed by two steps instead of one, otherwise the '.id' gets interpreted as a call of +Object.id+
+    @user_id = user.id
   end # we even could implement a reconnect()--but skip that now
 
   attr_reader :connection, :user_id, :use_alternative_api, :service_in_use, :service_lacks, :peer_user, :supervisor, :username #, :password

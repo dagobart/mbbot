@@ -135,6 +135,16 @@ class MicroBlogFriending
     users.collect { |user| user.screen_name }
   end
 
+  # returns a User object for the user with the given +user_id+
+  def user_by_id(user_id)
+    @connection.user(user_id)
+  end # fixme: + add test
+
+  # returns the nickname of the user with the id +user_id+
+  def username_by_id(user_id)
+    user_by_id(user_id).screen_name
+  end # fixme: + add test
+
   def is_friend_with?(user_screen_name)
     @connection.friendship_exists?(@connector.username, user_screen_name)
   end # FIXME: + add test

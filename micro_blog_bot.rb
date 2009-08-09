@@ -24,7 +24,7 @@ class MicroBlogBot
     @connector =
          MicroBlogConnector.new( VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN )
     @friending = MicroBlogFriending.new(@connector)
-    @talk = MicroBlogMessagingIO.new(@connector)
+    @talk = MicroBlogMessagingIO.new(@connector, @friending)
 
     @bot_name   = @connector.username
     @supervisor = @connector.supervisor
@@ -74,6 +74,14 @@ class MicroBlogBot
     return 'You may aim any of these commands at me: about help ping'
   end
 
+  def say_hello
+    if USE_GEM_0_4_1 then
+      @talk.say('Starting up. Running on the old gem, cannot send DMs.')
+    else
+      @talk.say('Starting up.')
+    end
+  end
+
   # be nice to new followers
   def catch_up_with_followers
     welcome_message = "Welcome! Thanks for the follow! Send" +
@@ -116,12 +124,15 @@ class MicroBlogBot
       process_latest_received
       @talk.persist
       unless @shutdown
+        puts "#{ Time.now }: sleeping for #{waittime} seconds..."
         sleep waittime
-        puts "#{ Time.now }: nothing happens"
       end
     end
   end # FIXME: + somewhere add a general output-to-console state() method
 
+  # FIXME: if a reply and a DM get received during the same run of 
+  # process_latest_received(), the DM will not be answered, not even by 
+  # the next run of process_latest_received()
   def process_latest_received
     sorted_replies = @talk.get_latest_replies.sort{|a,b| a['id'].to_i <=> b['id'].to_i}
     sorted_replies.each do |msg|
@@ -191,22 +202,19 @@ class MicroBlogBot
 	    if @shutdown then
 	      answer = "Shutting down, master. // @#{ @bot_name } is @#{ @connector.supervisor }'s #chat #bot based on @dagobart's #LGPL3 #Twitter (/Identica) chatbot framework."
 	    else
-	      answer = @bot_commands[command] 
+	      answer = @bot_commands[command]
 	    end
 	    if (answer.class == Proc) then
 	      answer = answer.call(predicate,msg)
             elsif (answer) then
 	      puts answer + "\n"
 	    else
-	      answer = "Don't know how to handle your request of '#{ text }'"
+	      answer = "Don't know how to handle your request of '#{text}'"
 	    end
-#	    answer = "@#{ screen_name }: #{ answer }" # only for public replies; direct messages AKA non-public replies don't need a prepending '@...:'
 
-	    answer = "#{answer[0,136]}..." if answer.length > 140
+	    answer = @talk.cut_to_tweet_length(answer)
 
 	    msg2 = @talk.direct_msg(user_id, answer)
-	    puts answer # help//support us learn about new developments in
-     		# our relationships to our followees
 
 # line seems to contradict new, sophisticated process_latest_received(),
 # hence (?) dsifry commented this here line of code out:
@@ -214,7 +222,7 @@ class MicroBlogBot
 #    # avoid, that the next time the bot is going to poll for new messages,
 #    # it won't consider its own ones
 #    @talk.latest_message_received = msg.id
-  end # FIXME: + make it an option to answer publicly/privately
+  end # fixme: + make it an option to answer publicly/privately
 
   # actually, I didn't grasp Ruby finalizing. If you do, feel free to
   # implement a better solution than this need to call shutdown explicitly
@@ -228,6 +236,7 @@ end
 # sample code for a minimalist µB bot of your own:
 #
 # bot = MicroBlogBot.new
+# bot.say_hello
 # bot.operate
 # bot.shutdown
 #

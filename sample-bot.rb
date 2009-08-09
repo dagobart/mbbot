@@ -8,11 +8,16 @@ require 'dbm'
 
 begin
   bot = MicroBlogBot.new
-  bot.operate(75) # 75 seconds between updates, which is what Twitter recommends
-rescue Twitter::TwitterError, Twitter::NotFound, Twitter::Unavailable, Twitter::InformTwitter => e
+  bot.say_hello
+  bot.operate(80) # 75 seconds between updates, which is what Twitter recommends
+rescue Twitter::Unavailable => e
   puts "We had a Twitter Error. Sleeping and resetting.\nError: #{e.message}\n"
   sleep 60
   retry
+#rescue Twitter::NotFound, Twitter::TwitterError, Twitter::InformTwitter => e
+#  puts "We had a Twitter Error. Sleeping and resetting.\nError: #{e.message}\n"
+#  sleep 60
+#  retry
 rescue Crack::ParseError => e
   puts "We had a Parsing Error in the JSON Stream. Sleeping and resetting.\nError: #{e.message}\n"
   sleep 60
