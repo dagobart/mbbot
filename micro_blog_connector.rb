@@ -89,7 +89,8 @@ class MicroBlogConnector
                                           :api_host => @use_alternative_api)
           rescue Twitter::CantConnect
            raise Twitter::CantConnect,
-                 "#{config_file}: Failed to connect to micro-blogging service provider '#{@service_in_use}'."
+                 "#{config_file}: Failed to connect to micro-blogging" +
+                                " service provider '#{@service_in_use}'."
         end
 
       # end-if use_alternative_api?
@@ -112,9 +113,11 @@ class MicroBlogConnector
 
   def errmsg(error)
     if error == Twitter::CantConnect
-      "#{@service_in_use} says it couldn't connect. Translates to: is refusing to perform the desired action for us."
+      "#{@service_in_use} says it couldn't connect. Translates to: is" +
+        " refusing to perform the desired action for us."
     else
-      "something went wrong on #{@service_in_use} with the just before intended action."
+      "something went wrong on #{@service_in_use} with the just before" +
+        " intended action."
     end
   end # FIXME: not yet tested: connecting Twitter with a current twitter gem
 

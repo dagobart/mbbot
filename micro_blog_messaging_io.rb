@@ -31,8 +31,11 @@ class MicroBlogMessagingIO
   def initialize(connector, friending = nil)
     @connector = connector
     @connection = @connector.connection
+    @bot_name   = @connector.username
+
     @friending = friending ? friending : MicroBlogFriending.new(@connector)
-    @latest_tweeds = YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
+    @latest_tweeds = 
+      YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
   end
 
   def cut_to_tweet_length(msg)

@@ -39,11 +39,13 @@ class MicroBlogFriending
       message = "following back #{follower_screen_name}"
       collected_messages += "#{message}\n"
       DBM.open('followbacks') do  |db| 
-        if ((!db[follower_screen_name]) || (db[follower_screen_name].length == 0)) then
+        if ((!db[follower_screen_name]) || 
+            (db[follower_screen_name].length == 0)) then
           db[follower_screen_name] = DateTime.now.to_s
+
           puts message
           begin
-          follow(follower_screen_name)
+            follow(follower_screen_name)
           rescue Twitter::TwitterError => e
             puts "We couldn't follow #{follower_screen_name}: #{e.message}"
           end
@@ -56,7 +58,8 @@ class MicroBlogFriending
       message = "leaving #{follower_screen_name}"
       collected_messages += "#{message}\n"
       DBM.open('followerwelcomes') do  |db| 
-        if ((!db[follower_screen_name]) || (db[follower_screen_name].length == 0)) then
+        if ((!db[follower_screen_name]) || 
+            (db[follower_screen_name].length == 0)) then
           db[follower_screen_name] = nil
           puts message
           leave(follower_screen_name)
@@ -83,7 +86,8 @@ class MicroBlogFriending
     if USE_GEM_0_4_1 then
       @connection.leave(user_screen_name) unless @connector.service_lacks['leave']
       @connection.destroy_friendship(user_screen_name)
-      # FIXME: just learned that @connection.leave is a misnomer: @connection.leave means: get no longer notified by leavee's updates
+      # FIXME: just learned that @connection.leave is a misnomer:
+      #  @connection.leave means: get no longer notified by leavee's updates
     else
       @connection.friendship_destroy(user_screen_name)
     end
@@ -107,7 +111,7 @@ class MicroBlogFriending
     num_followers = 100
     counter = 1
     follower_array = []
-    until num_followers < 100 do
+    until num_followers < 100 do # fixme: why a loop? why not a each, map or inject?
       query = { "page" => counter }
       follower_page = @connection.followers(query)
       num_followers = follower_page.length
@@ -121,7 +125,7 @@ class MicroBlogFriending
     num_friends = 100
     counter = 1
     friend_array = []
-    until num_friends < 100 do
+    until num_friends < 100 do # fixme: why a loop? why not a each, map or inject?
       query = { "page" => counter }
       friend_page = @connection.friends(query)
       num_friends = friend_page.length
@@ -130,6 +134,7 @@ class MicroBlogFriending
     end
     user_names(friend_array)
   end # fixme: not yet tested with gem v0.4.1; for gem v0.4.1 this method consisted of a single line of code: +user_names(@connection.friends)+
+  # fixme: if possible, join friend_names() with follower_names()
 
   def user_names(users)
     users.collect { |user| user.screen_name }
