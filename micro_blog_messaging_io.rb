@@ -34,7 +34,7 @@ class MicroBlogMessagingIO
     @bot_name   = @connector.username
 
     @friending = friending ? friending : MicroBlogFriending.new(@connector)
-    @latest_tweeds = 
+    @latest_tweeds =    # fixme: rename ..._TWEED_... to ..._TWEET_...
       YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
   end
 
@@ -84,6 +84,8 @@ class MicroBlogMessagingIO
   def destroy(message_id)
     @connection.destroy(message_id)
   end # fixme: add test
+      # FIXME: apparently doesn't work with Twitter gem 0.4.1 for
+      #        identi.ca (anymore?)
 
  # chances are that Twitter needs both pieces of data, in_reply_to_status_id
   # and in_reply_to_user_id to get the message threading right. (You can
