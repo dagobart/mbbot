@@ -5,19 +5,24 @@ require File.join(File.dirname(__FILE__), 'micro_blog_consts')
 # Unfortunately, the twitter gem supports identi.ca only prior to v0.5.0,
 # therefore we need to use the old gem in case we want our bot to work on
 # identi.ca too. Identi.ca support is tested only for v0.4.1 therefore we
-# use that as 'the old gem':
+# use that v0.4.1 as 'the old gem':
 #
 # FIXME:
-# Flip +USE_IDENTICA+ to +true+ or +false+ in case either identi.ca (true)
-# or Twitter (false) shall be used. This causes the twitter gem 0.4.1 (for
-# identi.ca) or any later (for Twitter) to be loaded. Although this step can
-# be inferred from what's set up in the credentials YAML file, currently it
-# cannot be automated, unfortunately. (The reason for why it cannot be
-# automated is that I assume if I'd do it within the YAML file examination,
-# the scope of the gem operation would be restricted to that YAML file
-# examination method rather than applying to the whole program. If you've
-# got a patch that fixes this, you're greatly welcome to contribute it!)
-USE_IDENTICA = false
+# to avoid to always remember to manually flip +USE_IDENTICA+ to +true+
+# or +false, I added an ugly hack that directly accesses a config file and
+# hard-codes 'twitter' to be the indicator for +USE_IDENTICA+ to become
+# +false+/+true+. The flip causes the twitter gem 0.4.1 (for identi.ca) or
+# any later (for Twitter) to be loaded. (The reason for why this hack is
+# this ugly -- has two hard-coded values and iterates what's essentially
+# in initialize() yet --  is that I assume if I'd do it within
+# initialize(), the scope of the gem operation would be restricted to that
+# initialize() rather than applying to the whole program. -- If you've got
+# a patch that fixes this, you're greatly welcome to contribute it!)
+if YAML::load(File.open(VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN))['account']['service'] == 'twitter' then
+  USE_IDENTICA = false
+else
+  USE_IDENTICA = true
+end
 USE_GEM_0_4_1 = USE_IDENTICA
 
 # '=0.4.1' for identi.ca support, '>0.4.1' for Twitter support
@@ -49,9 +54,10 @@ class MicroBlogConnector
        @service_in_use = @account_data['account']['service']
              @username = @account_data[@service_in_use]['user']
              @password = @account_data[@service_in_use]['password']
-            @peer_user = @account_data[@service_in_use]['peer'] # FIXME: add test for this
-           @supervisor = @account_data[@service_in_use]['supervisor'] # FIXME: add test for this
-    @use_alternative_api = @account_data[@service_in_use]['use_alternative_api']
+            @peer_user = @account_data[@service_in_use]['peer']
+           @supervisor = @account_data[@service_in_use]['supervisor']
+  @use_alternative_api = 
+      @account_data[@service_in_use]['use_alternative_api']
 
     @service_lacks = Hash.new
     POSSIBLE_SHORTFALLS.each do |possible_shortfall|
