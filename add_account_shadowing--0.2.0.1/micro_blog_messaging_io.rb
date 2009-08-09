@@ -20,8 +20,8 @@ class MicroBlogMessagingIO
   # Reason for not reusing the login credentials file is the risk of
   # accidentally kill that file, thus the login credentials might get lost.
   #
-  # If you've got an idea how to improve the latest message ID storage, please
-  # let me know. -- @dagobart/20090129
+  # If you've got an idea how to improve the latest message ID storage,
+  # please let me know. -- @dagobart/20090129
   def initialize(connector, skip_catchup = false)
     @connector = connector
     @connection = @connector.connection

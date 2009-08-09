@@ -1,7 +1,12 @@
 main_dir = File.join(File.dirname(__FILE__), '')
-require (main_dir + 'micro_blog_connector')
-require (main_dir + 'micro_blog_friending')
-require (main_dir + 'micro_blog_messaging_io')
+
+%w{ 
+    micro_blog_connector 
+    micro_blog_friending 
+    micro_blog_messaging_io 
+  }.each do |lib|
+    require (main_dir + lib )
+  end
 
 # This piece of software is released under the
 # Lesser GNU General Public License version 3.
