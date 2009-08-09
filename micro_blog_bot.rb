@@ -91,7 +91,7 @@ class MicroBlogBot
       DBM.open('followerwelcomes') do  |db| 
         if ((!db[new_follower]) || (db[new_follower].length == 0)) then
           db[new_follower] = DateTime.now.to_s
-          puts "Sending Welcome message to  #{new_follower}!"
+          @talk.log "[status] Sending Welcome message to  #{new_follower}!"
           @talk.direct_msg(new_follower, welcome_message)
         end
       end
@@ -124,7 +124,7 @@ class MicroBlogBot
       process_latest_received
       @talk.persist
       unless @shutdown
-        puts "#{ Time.now }: sleeping for #{waittime} seconds..."
+        @talk.log "[status] sleeping for #{waittime} seconds..."
         sleep waittime
       end
     end
@@ -148,7 +148,7 @@ class MicroBlogBot
         end
         @talk.latest_message_received = msg['id'].to_i + 1
       else
-        puts "Skipping ID: " + msg['id'].to_s + "\t" + msg['text'].to_s + "\n"
+        @talk.log "[status] Skipping ID: " + msg['id'].to_s + "\t" + msg['text'].to_s + "\n"
       end
     end
     
@@ -167,7 +167,7 @@ class MicroBlogBot
         end
         @talk.latest_direct_message_received = direct_msg['id'].to_i + 1
       else
-        puts "Skipping ID: " + direct_msg['id'].to_s + "\t" + direct_msg['text'].to_s + "\n"
+        @talk.log "[status] Skipping ID: " + direct_msg['id'].to_s + "\t" + direct_msg['text'].to_s + "\n"
       end
     end
   end
@@ -190,31 +190,30 @@ class MicroBlogBot
            text = msg['text'];       text.sub!(/^@\S+\s+/, '')
                          # formerly: text.sub!(/^@#{@bot_name}\s+/, '')
 
+    	@shutdown ||= (
+                              (text == 'shutdown') && 
+                       (screen_name == @connector.supervisor)
+                      )
+
+    if @shutdown then
+      answer = "Shutting down, master. // @#{ @bot_name } is @#{ @connector.supervisor }'s #chat #bot based on @dagobart's #LGPL3 #Twitter (/Identica) chatbot framework." # fixme: remove hard-coded string
+    else
       tokens = Token::new(text)
       command = tokens.next_token
       predicate = tokens.predicate
 
-    	@shutdown ||= (
-                       (command == 'shutdown') && 
-                       (screen_name == @connector.supervisor)
-                      )
+      answer = @bot_commands[command]
 
-	    if @shutdown then
-	      answer = "Shutting down, master. // @#{ @bot_name } is @#{ @connector.supervisor }'s #chat #bot based on @dagobart's #LGPL3 #Twitter (/Identica) chatbot framework."
-	    else
-	      answer = @bot_commands[command]
-	    end
-	    if (answer.class == Proc) then
-	      answer = answer.call(predicate,msg)
-            elsif (answer) then
-	      puts answer + "\n"
-	    else
-	      answer = "Don't know how to handle your request of '#{text}'"
-	    end
+      if (answer.class == Proc) then
+        answer = answer.call(predicate,msg)
+      elsif (answer) then
+        # puts answer + "\n"
+      else
+        answer = "Don't know how to handle your request of '#{text}'"
+      end
+    end
 
-	    answer = @talk.cut_to_tweet_length(answer)
-
-	    msg2 = @talk.direct_msg(user_id, answer)
+    msg2 = @talk.direct_msg(user_id, @talk.cut_to_tweet_length(answer))
 
 # line seems to contradict new, sophisticated process_latest_received(),
 # hence (?) dsifry commented this here line of code out:

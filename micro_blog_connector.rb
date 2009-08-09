@@ -17,7 +17,7 @@ require File.join(File.dirname(__FILE__), 'micro_blog_consts')
 # the scope of the gem operation would be restricted to that YAML file
 # examination method rather than applying to the whole program. If you've
 # got a patch that fixes this, you're greatly welcome to contribute it!)
-USE_IDENTICA = true
+USE_IDENTICA = false
 USE_GEM_0_4_1 = USE_IDENTICA
 
 # '=0.4.1' for identi.ca support, '>0.4.1' for Twitter support

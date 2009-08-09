@@ -43,11 +43,16 @@ class MicroBlogMessagingIO
     return "@#{ username } #{ msg }"
   end
 
+  def log(msg)
+    puts "#{ Time.now }: #{ msg }"
+  end
+
   def say(msg)
     @connection.update(msg)
-
-    puts "#{ Time.now }: #{ msg }" # help//support us learn about new
-                #  developments in our relationships to our followees
+    
+    # help//support us learn about new developments in our relationships
+    # to our followees:
+    log((msg =~ /^@/) ? msg : "[post] #{ msg }")
   end
 
   def direct_msg(user_id, msg)
@@ -63,12 +68,12 @@ class MicroBlogMessagingIO
     begin
       @connection.direct_message_create(user_id, msg)
 
-      puts "#{ Time.now }: d #{ username } #{ msg }" # help//support us
-                #  learn about new developments in our relationships to
-                #  our followees
+      # help//support us learn about new developments in our relationships
+      # to our followees:
+      log("d #{ username } #{ msg }")
     rescue Twitter::TwitterError => e
-      puts "Twitter Error in sending a direct message to @#{ username }: " + e.message
-      puts "attempting regular reply"
+      puts "*** Twitter Error in sending a direct message to @#{ username }: " + e.message
+      puts "    attempting regular reply"
       say(public_version_of_message)
     end
   end

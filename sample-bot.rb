@@ -6,33 +6,50 @@ require (main_dir + 'micro_blog_bot')
 require (main_dir + 'Token')
 require 'dbm'
 
-begin
+default_err_msg = 'We had a Twitter Error.'
+err_msgs = 
+  {
+     'Twitter::Unavailable' => default_err_msg,
+        'Twitter::NotFound' => default_err_msg,
+    'Twitter::TwitterError' => default_err_msg,
+   'Twitter::InformTwitter' => default_err_msg,
+        'Crack::ParseError' => 'We had a Parsing Error in the JSON Stream.',
+          'SystemCallError' => 'We had a SystemCallError Error.',
+                  'IOError' => 'We had an IOError Error.',
+           'Timeout::Error' => 'We had a Timeout Error.'
+  }
+possible_errors = 
+  err_msgs.keys - [
+                    'Twitter::NotFound',
+                    'Twitter::TwitterError',
+                    'Twitter::InformTwitter'
+                  ] if USE_GEM_0_4_1
+
+def handle_error(err)
+  log("[error] #{ err_msgs(err.to_s) }" +
+      " Sleeping and resetting.\nError: #{ err.message }\n")
+  sleep 60
+end
+
+def start_and_run_bot
   bot = MicroBlogBot.new
   bot.say_hello
-  bot.operate(80) # 75 seconds between updates, which is what Twitter recommends
-rescue Twitter::Unavailable => e
-  puts "We had a Twitter Error. Sleeping and resetting.\nError: #{e.message}\n"
-  sleep 60
-  retry
-#rescue Twitter::NotFound, Twitter::TwitterError, Twitter::InformTwitter => e
-#  puts "We had a Twitter Error. Sleeping and resetting.\nError: #{e.message}\n"
-#  sleep 60
-#  retry
-rescue Crack::ParseError => e
-  puts "We had a Parsing Error in the JSON Stream. Sleeping and resetting.\nError: #{e.message}\n"
-  sleep 60
-  retry
-rescue SystemCallError => e
-  puts "We had a SystemCallError Error. Sleeping and resetting.\nError: #{e.message}\n"
-  sleep 60
-  retry
-rescue IOError => e
-  puts "We had an IOError Error. Sleeping and resetting.\nError: #{e.message}\n"
-  sleep 60
-  retry
-rescue Timeout::Error => e
-  puts "We had a Timeout Error. Sleeping and resetting.\nError: #{e.message}\n"
-  sleep 60
-  retry
+  bot.operate(80) # Twitter recommends 75 seconds delay between updates
+end
+
+if USE_GEM_0_4_1 then
+  begin
+    start_and_run_bot
+  rescue Twitter::Unavailable, Crack::ParseError, SystemCallError, IOError, Timeout::Error => e
+    handle_error(e); retry
+  end
+else
+  begin
+    start_and_run_bot
+  rescue Twitter::Unavailable, Twitter::NotFound, Twitter::TwitterError, Twitter::InformTwitter, Crack::ParseError, SystemCallError, IOError, Timeout::Error => e
+    handle_error(e); retry
+  end
 end
 bot.shutdown
+
+# fixme: modified error handling is not yet thoroughly tested
