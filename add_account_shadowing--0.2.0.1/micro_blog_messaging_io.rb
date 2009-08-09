@@ -28,7 +28,8 @@ class MicroBlogMessagingIO
 
     @bot_name   = @connector.username
 
-    @latest_messages = YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )  # fixme rename ..._TWEED_... to ..._TWEET_...
+    @latest_messages =    # fixme: rename ..._TWEED_... to ..._TWEET_...
+      YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
     self.skip_catchup if skip_catchup
   end
   # FIXME: in case of missing initial values (= missing entries in the yaml
@@ -42,7 +43,7 @@ class MicroBlogMessagingIO
     return @connection.timeline(:public, :count => 1).first.id.to_i
   end
 
-  def skip_catchup
+  def skip_catchup # FIXME: initializes values invalidly since every kind of msg stream may have its own counter
     latest_message = now_current_message_id
 
     [:own_timeline, :public_timeline, :friends_timeline, 
