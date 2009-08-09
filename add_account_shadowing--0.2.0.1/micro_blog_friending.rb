@@ -38,16 +38,33 @@ class MicroBlogFriending
     new_followers.each do |follower_screen_name|
       message = "following back #{follower_screen_name}"
       collected_messages += "#{message}\n"
-      puts message
-      follow(follower_screen_name)
+      DBM.open('followbacks') do  |db| 
+        if ((!db[follower_screen_name]) || 
+            (db[follower_screen_name].length == 0)) then
+          db[follower_screen_name] = DateTime.now.to_s
+
+          puts message
+          begin
+            follow(follower_screen_name)
+          rescue Twitter::TwitterError => e
+            puts "We couldn't follow #{follower_screen_name}: #{e.message}"
+          end
+        end
+      end
     end
 
     # leave everyone who left us:
     lost_followers.each do |follower_screen_name|
       message = "leaving #{follower_screen_name}"
       collected_messages += "#{message}\n"
-      puts message
-      leave(follower_screen_name)
+      DBM.open('followerwelcomes') do  |db| 
+        if ((!db[follower_screen_name]) || 
+            (db[follower_screen_name].length == 0)) then
+          db[follower_screen_name] = nil
+          puts message
+          leave(follower_screen_name)
+        end
+      end
     end
 
     return collected_messages
@@ -56,15 +73,24 @@ class MicroBlogFriending
       # some 'howto' message,
 
   def follow(user_screen_name)
-    @connection.create_friendship(user_screen_name)
-    @connection.follow(user_screen_name) unless @connector.service_lacks['follow']
-    # FIXME: just learned that @connection.follow is a misnomer: @connection.follow means: get notified by followee's updates
+    if USE_GEM_0_4_1 then
+      @connection.create_friendship(user_screen_name)      
+      @connection.follow(user_screen_name) unless @connector.service_lacks['follow']
+      # FIXME: just learned that @connection.follow is a misnomer: @connection.follow means: get notified by followee's updates
+    else
+      @connection.friendship_create(user_screen_name)
+    end
   end
 
   def leave(user_screen_name)
-    @connection.leave(user_screen_name) unless @connector.service_lacks['leave']
-    @connection.destroy_friendship(user_screen_name)
-    # FIXME: just learned that @connection.leave is a misnomer: @connection.leave means: get no longer notified by leaveee's updates
+    if USE_GEM_0_4_1 then
+      @connection.leave(user_screen_name) unless @connector.service_lacks['leave']
+      @connection.destroy_friendship(user_screen_name)
+      # FIXME: just learned that @connection.leave is a misnomer:
+      #  @connection.leave means: get no longer notified by leavee's updates
+    else
+      @connection.friendship_destroy(user_screen_name)
+    end
   end
 
   # Note: +user_names(@connection.followers - @connection.friends)+
@@ -82,16 +108,47 @@ class MicroBlogFriending
   end
 
   def follower_names
-    user_names(@connection.followers)
-  end
+    num_followers = 100
+    counter = 1
+    follower_array = []
+    until num_followers < 100 do # fixme: why a loop? why not a each, map or inject?
+      query = { "page" => counter }
+      follower_page = @connection.followers(query)
+      num_followers = follower_page.length
+      follower_array = follower_array + follower_page
+      counter = counter + 1
+    end
+    user_names(follower_array)
+  end # fixme: not yet tested with gem v0.4.1; for gem v0.4.1 this method consisted of a single line of code: +user_names(@connection.followers)+
 
   def friend_names
-    user_names(@connection.friends)
-  end
+    num_friends = 100
+    counter = 1
+    friend_array = []
+    until num_friends < 100 do # fixme: why a loop? why not a each, map or inject?
+      query = { "page" => counter }
+      friend_page = @connection.friends(query)
+      num_friends = friend_page.length
+      friend_array = friend_array + friend_page
+      counter = counter + 1
+    end
+    user_names(friend_array)
+  end # fixme: not yet tested with gem v0.4.1; for gem v0.4.1 this method consisted of a single line of code: +user_names(@connection.friends)+
+  # fixme: if possible, join friend_names() with follower_names()
 
   def user_names(users)
     users.collect { |user| user.screen_name }
   end
+
+  # returns a User object for the user with the given +user_id+
+  def user_by_id(user_id)
+    @connection.user(user_id)
+  end # fixme: + add test
+
+  # returns the nickname of the user with the id +user_id+
+  def username_by_id(user_id)
+    user_by_id(user_id).screen_name
+  end # fixme: + add test
 
   def is_friend_with?(user_screen_name)
     @connection.friendship_exists?(@connector.username, user_screen_name)
