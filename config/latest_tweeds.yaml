@@ -3,8 +3,8 @@ inbox_latest:
   identica: 7811217
   twitter: 3208939028
 mentions: 
-  identica: 7885366
-  twitter: 3230246921
+  identica: 7887846
+  twitter: 3233300782
 friends_timeline: 
   identica: 7878043
   twitter: 3230236621
@@ -12,8 +12,8 @@ public_timeline:
   identica: 7878043
   twitter: 3230236621
 incoming_DMs: 
-  identica: 17789
-  twitter: 289489618
+  identica: 17794
+  twitter: 289851778
 own_timeline: 
   identica: 7878043
   twitter: 3230236621
@@ -21,5 +21,5 @@ direct_latest:
   identica: 17770
   twitter: 289489618
 replies: 
-  identica: 7885365
-  twitter: 3230236621
+  identica: 7887845
+  twitter: 3233300782
