@@ -19,7 +19,7 @@ class MicroBlogShadow
     @connector =
          MicroBlogConnector.new( VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN )
     @friending = MicroBlogFriending.new(@connector)
-    @talk = MicroBlogMessagingIO.new(@connector)
+    @talk = MicroBlogMessagingIO.new(@connector, @friending)
 
     @bot_name = @connector.username
 
@@ -109,6 +109,7 @@ shadow.shutdown
 
 
 # todo:
+# * turn this in a sample-shadowbot.rb, and the other into a sample-chatbot.rb
 # + create gem
 #   + check gem in to the usual gems repository
 #   + announce gem

@@ -1,9 +1,9 @@
 --- 
-inbox_latest: 
-  identica: 7811217
-  twitter: 3208939028
 mentions: 
   identica: 7860550
+  twitter: 3208939028
+inbox_latest: 
+  identica: 7811217
   twitter: 3208939028
 friends_timeline: 
   identica: 7860550
@@ -11,12 +11,12 @@ friends_timeline:
 public_timeline: 
   identica: 7860550
   twitter: 3208939028
+own_timeline: 
+  identica: 7867656
+  twitter: 3226109506
 incoming_DMs: 
   identica: 17676
   twitter: 287102460
-own_timeline: 
-  identica: 7858541
-  twitter: 3208939028
 replies: 
   identica: 7860550
   twitter: 3208939028

@@ -1,4 +1,3 @@
-# require 'micro_blog_friending'
 require File.join(File.dirname(__FILE__), 'micro_blog_friending')
 
 # This piece of software is released under the
@@ -22,12 +21,21 @@ class MicroBlogMessagingIO
   #
   # If you've got an idea how to improve the latest message ID storage,
   # please let me know. -- @dagobart/20090129
-  def initialize(connector, skip_catchup = false)
+  #
+  # The +friending+ param refers to a +MicroBlogFriending+ object, and
+  # best practice is to give to it the +MicroBlogFriending+ object that
+  # is used by micro_blog_bot.rb too. It is needed for sending direct
+  # messages in case the sending of the message as a private message
+  # fails (or is impossible at all because the underlying twitter gem
+  # doesn't support sending direct messages).
+  def initialize(connector, friending, skip_catchup = false)
     @message_type__message_stream_type = {
             :own_timeline => :user,
          :public_timeline => :public,
         :friends_timeline => :friends
     }
+
+    @friending = friending
 
     @connector = connector
     @connection = @connector.connection
@@ -129,8 +137,24 @@ class MicroBlogMessagingIO
     # puts @latest_messages.pretty_inspect; exit
   end # fixme: add tests
 
+  def cut_to_tweet_length(msg)
+    return ( (msg.length > 140) ? "#{ msg[0, 136] }..." : msg )
+  end
+
+  def prepend_username_to_message(username, msg)
+    return "@#{ username } #{ msg }"
+  end
+
+  def log(msg)
+    puts "#{ Time.now }: #{ msg }"
+  end
+
   def say(msg)
     @connection.update(msg)
+    
+    # help//support us learn about new developments in our relationships
+    # to our followees:
+    log((msg =~ /^@/) ? msg : "[post] #{ msg }")
   end
 
   def destroy(message_id)
@@ -339,8 +363,8 @@ class MicroBlogMessagingIO
 
       if   message_stream_type then
            msgs = process_timeline_messages(
-#                    @connection.timeline(message_stream_type,
-                                 timeline(message_stream_type,
+#                    @connection.timeline(message_stream_type, # replacement
+                                 timeline(message_stream_type, # not yet tested
                                           :since_id => latest_message_id))
       elsif type == :incoming_DMs     then
            msgs = process_private_messages(
