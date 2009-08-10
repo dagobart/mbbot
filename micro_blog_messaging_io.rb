@@ -22,18 +22,18 @@ class MicroBlogMessagingIO
   # If you've got an idea how to improve the latest message ID storage,
   # please let me know. -- @dagobart/20090129
   #
-  # The +friending+ param refers to a +MicroBlogFriending+ object, and
-  # best practice is to give to it the +MicroBlogFriending+ object that
-  # is used by micro_blog_bot.rb too. It is needed for sending direct
-  # messages in case the sending of the message as a private message
-  # fails (or is impossible at all because the underlying twitter gem
-  # doesn't support sending direct messages).
-  def initialize(connector, friending = nil)
+  # The +friending+ param refers to a +MicroBlogFriending+ object. Give
+  # to it the +MicroBlogFriending+ object that is used by micro_blog_bot.rb 
+  # too. It is needed in case sending direct messages fails (or is impossible
+  # at all because the underlying twitter gem -- e.g. v0.4.1 -- doesn't
+  # support sending direct messages).
+  def initialize(connector, friending)
+    @friending = friending
+
     @connector = connector
     @connection = @connector.connection
     @bot_name   = @connector.username
 
-    @friending = friending ? friending : MicroBlogFriending.new(@connector)
     @latest_tweeds =    # fixme: rename ..._TWEED_... to ..._TWEET_...
       YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
   end
