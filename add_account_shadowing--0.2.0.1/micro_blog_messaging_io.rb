@@ -158,6 +158,29 @@ class MicroBlogMessagingIO
     log((msg =~ /^@/) ? msg : "[post] #{ msg }")
   end
 
+  def direct_msg(user_id, msg)
+    username = @friending.username_by_id(user_id)
+    public_version_of_message = 
+      cut_to_tweet_length( prepend_username_to_message( username, msg ) )
+
+    if USE_GEM_0_4_1 then # twitter gem 0.4.1 cannot DM
+      # a +return+ must be w/i an if rather than in a +return ... if...+
+      return say(public_version_of_message)
+    end
+
+    begin
+      @connection.direct_message_create(user_id, msg)
+
+      # help//support us learn about new developments in our relationships
+      # to our followees:
+      log("d #{ username } #{ msg }")
+    rescue Twitter::TwitterError => e
+      puts "*** Twitter Error in sending a direct message to @#{ username }: " + e.message
+      puts "    attempting regular reply"
+      say(public_version_of_message)
+    end
+  end
+
   def destroy(message_id)
     @connection.destroy(message_id)
   end # fixme: add test
