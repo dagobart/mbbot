@@ -486,6 +486,12 @@ class MicroBlogMessagingIO
   end # fixme: + add tests
 
 
+  def get_latest_own_timeline_messages(perform_latest_reply_id_update = true)
+    get_latest_messages(perform_latest_reply_id_update, :own_timeline)
+  end # fixme: + add tests
+  alias_method :get_latest_posts, :get_latest_own_timeline_messages
+  # FIXME: add get_latest_*() for the other possible message streams
+
   def get_latest_direct_msgs(perform_latest_message_id_update = false)
     latest_direct_message_id = self.latest_direct_message_received
 
@@ -530,6 +536,9 @@ class MicroBlogMessagingIO
     return latest_direct_msgs
   end
 
+  # fixme: maybe we could speed up this method by avoiding write access when
+  #        @latest_messages didn't change at all in between
+  # fixme: what shall happen in case the file cannot be written, say disk full?
   def shutdown
     yaml_file = File.open( LATEST_TWEED_ID_PERSISTENCY_FILE, 'w' )
     yaml_file.write(@latest_messages.to_yaml)
