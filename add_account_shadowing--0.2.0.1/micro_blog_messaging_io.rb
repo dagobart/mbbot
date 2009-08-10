@@ -212,6 +212,7 @@ class MicroBlogMessagingIO
                :latest_mention=
   alias_method :latest_message_received=, # Deprecated. Old name
                :latest_mention=
+# FIXME: remove all calls of deprecated method names
 
   def latest_mention
     return get_latest_message_id(:mentions)
@@ -273,14 +274,18 @@ class MicroBlogMessagingIO
   def latest_incoming_DM=(new_latest_ID)
     set_latest_message_id(:incoming_DMs, new_latest_ID)
   end # fixme: + add tests
-  alias_method :latest_DM=,         # convenience shorthand
+  alias_method :latest_DM=,            # convenience shorthand
                :latest_incoming_DM=
+  alias_method :latest_direct_message_received=,  # Deprecated.
+               :latest_incoming_DM=               #   Old name.
 
   def latest_incoming_DM
     return get_latest_message_id(:incoming_DMs)
   end # fixme: + add tests
-  alias_method :latest_DM,         # convenience shorthand
+  alias_method :latest_DM,            # convenience shorthand
                :latest_incoming_DM
+  alias_method :latest_direct_message_received,  # Deprecated.
+               :latest_incoming_DM               #   Old name.
 
 
   # +type+ - any of these: [:own_timeline, :public_timeline, :friends_timeline,
@@ -305,6 +310,14 @@ class MicroBlogMessagingIO
   end # fixme: + add tests
 
 
+  # process_timeline_messages() and process_private_messages()
+  # take an array of messages as received by the twitter gem.
+  # Each of these method processes each of the messages of either array
+  # and turns them into simplified message hashes suitable for the bot.
+  # The difference between both methods lies in what they fill in to
+  # the +screen_name+ and +user_id+ user fields; however, after
+  # processing both methods return a stream of messages which feature
+  # the same hash keys (read: the same structure).
   def process_timeline_messages(messages)
     processed_messages = []
 
@@ -322,6 +335,14 @@ class MicroBlogMessagingIO
   end # fixme: ^ replace string hash keys by symbol hash keys
       # fixme: + add tests
 
+  # process_timeline_messages() and process_private_messages()
+  # take an array of messages as received by the twitter gem.
+  # Each of these method processes each of the messages of either array
+  # and turns them into simplified message hashes suitable for the bot.
+  # The difference between both methods lies in what they fill in to
+  # the +screen_name+ and +user_id+ user fields; however, after
+  # processing both methods return a stream of messages which feature
+  # the same hash keys (read: the same structure).
   def process_private_messages(messages)
     processed_messages = []
 
@@ -440,6 +461,7 @@ class MicroBlogMessagingIO
   def get_latest_replies(perform_latest_reply_id_update = true)
     get_latest_messages(perform_latest_reply_id_update, :replies)
   end # fixme: + add tests
+
 
   def get_latest_own_timeline_messages(perform_latest_reply_id_update = true)
     get_latest_messages(perform_latest_reply_id_update, :own_timeline)
