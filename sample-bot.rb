@@ -1,10 +1,5 @@
 main_dir = File.join(File.dirname(__FILE__), '')
-require (main_dir + 'micro_blog_connector')
-require (main_dir + 'micro_blog_friending')
-require (main_dir + 'micro_blog_messaging_io')
 require (main_dir + 'micro_blog_bot')
-require (main_dir + 'Token')
-require 'dbm'
 
 default_err_msg = 'We had a Twitter Error.'
 err_msgs = 
@@ -32,24 +27,26 @@ def handle_error(err)
 end
 
 def start_and_run_bot
-  bot = MicroBlogBot.new
-  bot.say_hello
-  bot.operate(80) # Twitter recommends 75 seconds delay between updates
-end
+  handable_errors = [
+                      Twitter::Unavailable, Crack::ParseError, 
+                      SystemCallError, IOError, Timeout::Error
+                    ]
 
-if USE_GEM_0_4_1 then
+  handable_errors += [
+                       Twitter::NotFound, 
+                       Twitter::TwitterError, 
+                       Twitter::InformTwitter
+                     ] unless USE_GEM_0_4_1
+
   begin
-    start_and_run_bot
-  rescue Twitter::Unavailable, Crack::ParseError, SystemCallError, IOError, Timeout::Error => e
+    bot = MicroBlogBot.new
+    bot.say_hello
+    bot.operate(80) # Twitter recommends 75 seconds delay between updates
+  rescue handable_errors => e
     handle_error(e); retry
   end
-else
-  begin
-    start_and_run_bot
-  rescue Twitter::Unavailable, Twitter::NotFound, Twitter::TwitterError, Twitter::InformTwitter, Crack::ParseError, SystemCallError, IOError, Timeout::Error => e
-    handle_error(e); retry
-  end
-end
-bot.shutdown
+  bot.shutdown
+end # fixme: modified error handling is not yet thoroughly tested
+# fixme: move all the error handling procedures to micro_blog_bot itself
 
-# fixme: modified error handling is not yet thoroughly tested
+start_and_run_bot

@@ -194,10 +194,11 @@ class MicroBlogMessagingIO
   # got applied -- otherwise not.)
   def reply(msg, in_reply_to_status_id = nil, in_reply_to_user_id = nil)
     if in_reply_to_status_id && in_reply_to_user_id then
-      @connection.update(msg, {
-      				:in_reply_to_status_id => in_reply_to_status_id,
-        			  :in_reply_to_user_id => in_reply_to_user_id
-      			      }
+      @connection.update(msg, 
+                         {
+      			   :in_reply_to_status_id => in_reply_to_status_id,
+        		     :in_reply_to_user_id => in_reply_to_user_id
+                         }
       			)
     else
       say(msg)
@@ -209,19 +210,40 @@ class MicroBlogMessagingIO
   # 3203232261
   # 3203230178    3202827120
   # 3203177496    3202821667
-  # 3203161937    3202820108    3202286801
-  # 3202893076    3202546161    3202270208
-  #               3202516689    3202268364
-  #                             3202259068
-  def latest_message_received
-    @latest_messages['inbox_latest'][@connector.service_in_use]
-  end
+  # 3203161937    3202820108     3202286801
+  # 3202893076    3202546161     3202270208
+  #               3202516689     3202268364
+  #                              3202259068
+  #
+  # fixme: make yaml file paragraph headlines match the xxx of +latest_xxx+/
+  #  +latest_xxx=+, so it gets easier [for humans] to see the connection
+  #  between the yaml file chunks and the methods here in the class
+  def get_latest_message_id(type) # 1st received on Twitter: 1158336454
+    return @latest_messages[type.to_s][@connector.service_in_use]
+  end  # fixme: + add tests
+
+  def set_latest_message_id(type, new_latest_ID)
+    @latest_messages[type.to_s][@connector.service_in_use] = new_latest_ID
+  end # fixme: + add tests
+
 
   # 1st message received on Twitter: 1158336454
-  def latest_message_received=(new_latest_ID)
-    @latest_messages['inbox_latest'][@connector.service_in_use] = 
-      new_latest_ID
-  end
+  def latest_mention=(new_latest_ID)
+    set_latest_message_id(:mentions, new_latest_ID)
+  end # fixme: + add tests
+  alias_method :latest_mention_received=, # Deprecated. Old name
+               :latest_mention=
+  alias_method :latest_message_received=, # Deprecated. Old name
+               :latest_mention=
+
+  def latest_mention
+    return get_latest_message_id(:mentions)
+  end # fixme: + add tests
+  alias_method :latest_mention_received, # Deprecated. Old name
+               :latest_mention
+  alias_method :latest_message_received, # Deprecated. Old name
+               :latest_mention
+
 
   def latest_direct_message_received
     @latest_messages['direct_latest'][@connector.service_in_use]
@@ -234,11 +256,11 @@ class MicroBlogMessagingIO
 
  # Note: During the collect, we do temp-store the latest received message id
   # to a temporary storage +latest_message_id+ rather than using
-  # latest_message_received(). That's for performance: Using
-  # latest_message_received would involve the use of several hashes rather
-  # than just updating a single Fixnum.
+  # latest_mention_received(). That's for performance: Using
+  # latest_mention_received() would involve the use of several hashes rather
+  # than just updating a single fixnum.
   def get_latest_replies(perform_latest_message_id_update = true)
-    latest_message_id = self.latest_message_received
+    latest_message_id = self.latest_mention_received
 
       latest_replies = []
       @connection.replies(:since_id => latest_message_id).each do |reply|
@@ -273,7 +295,7 @@ class MicroBlogMessagingIO
       end
       # puts latest_replies.pretty_inspect
 
-    self.latest_message_received = latest_message_id if perform_latest_message_id_update
+    self.latest_mention_received = latest_message_id if perform_latest_message_id_update
 
     return latest_replies
   end

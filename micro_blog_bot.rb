@@ -4,7 +4,7 @@ main_dir = File.join(File.dirname(__FILE__), '')
 # require (main_dir + 'micro_blog_messaging_io')
 # require (main_dir + 'Token') # FIXME: rename Token.rb to token.rb
 require 'dbm'
-%w{ Token micro_blog_connector micro_blog_friending micro_blog_messaging_io   }.each do |lib|
+%w{ Token micro_blog_connector micro_blog_friending micro_blog_messaging_io }.each do |lib|
     require(main_dir + lib)
 end
 
@@ -136,7 +136,7 @@ class MicroBlogBot
   def process_latest_received
     sorted_replies = @talk.get_latest_replies.sort{|a,b| a['id'].to_i <=> b['id'].to_i}
     sorted_replies.each do |msg|
-      if (@talk.latest_message_received <= msg['id'].to_i) then
+      if (@talk.latest_mention_received <= msg['id'].to_i) then
         if USE_GEM_0_4_1 then # twitter gem v0.4.1 may raise an error
           begin
             answer_message(msg)
@@ -146,7 +146,7 @@ class MicroBlogBot
         else
           answer_message(msg)
         end
-        @talk.latest_message_received = msg['id'].to_i + 1
+        @talk.latest_mention_received = msg['id'].to_i + 1
       else
         @talk.log "[status] Skipping ID: " + msg['id'].to_s + "\t" + msg['text'].to_s + "\n"
       end
@@ -220,7 +220,7 @@ class MicroBlogBot
 #
 #    # avoid, that the next time the bot is going to poll for new messages,
 #    # it won't consider its own ones
-#    @talk.latest_message_received = msg.id
+#    @talk.latest_mention_received = msg.id
   end # fixme: + make it an option to answer publicly/privately
 
   # actually, I didn't grasp Ruby finalizing. If you do, feel free to
