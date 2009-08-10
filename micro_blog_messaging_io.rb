@@ -34,7 +34,7 @@ class MicroBlogMessagingIO
     @connection = @connector.connection
     @bot_name   = @connector.username
 
-    @latest_tweeds =    # fixme: rename ..._TWEED_... to ..._TWEET_...
+    @latest_messages =    # fixme: rename ..._TWEED_... to ..._TWEET_...
       YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
   end
 
@@ -114,21 +114,21 @@ class MicroBlogMessagingIO
   #               3202516689    3202268364
   #                             3202259068
   def latest_message_received
-    @latest_tweeds['inbox_latest'][@connector.service_in_use]
+    @latest_messages['inbox_latest'][@connector.service_in_use]
   end
 
   # 1st message received on Twitter: 1158336454
   def latest_message_received=(new_latest_ID)
-    @latest_tweeds['inbox_latest'][@connector.service_in_use] = 
+    @latest_messages['inbox_latest'][@connector.service_in_use] = 
       new_latest_ID
   end
 
   def latest_direct_message_received
-    @latest_tweeds['direct_latest'][@connector.service_in_use]
+    @latest_messages['direct_latest'][@connector.service_in_use]
   end
 
   def latest_direct_message_received=(new_latest_ID)
-    @latest_tweeds['direct_latest'][@connector.service_in_use] = 
+    @latest_messages['direct_latest'][@connector.service_in_use] = 
       new_latest_ID
   end
 
@@ -224,7 +224,7 @@ class MicroBlogMessagingIO
 
   def shutdown
     yaml_file = File.open( LATEST_TWEED_ID_PERSISTENCY_FILE, 'w' )
-    yaml_file.write(@latest_tweeds.to_yaml)
+    yaml_file.write(@latest_messages.to_yaml)
     yaml_file.close
   end
 
