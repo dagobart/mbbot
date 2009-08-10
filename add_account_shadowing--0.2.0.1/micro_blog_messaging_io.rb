@@ -43,6 +43,7 @@ class MicroBlogMessagingIO
     @latest_messages =    # fixme: rename ..._TWEED_... to ..._TWEET_...
       YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
     self.skip_catchup if skip_catchup
+    # puts @latest_messages.inspect; exit
   end
   # FIXME: in case of missing initial values (= missing entries in the yaml
   #        file) for the service the bot currently is assigned to, we should
@@ -114,6 +115,7 @@ class MicroBlogMessagingIO
     else
       hash = { key => value }
     end
+
     return hash
   end
 
@@ -146,7 +148,7 @@ class MicroBlogMessagingIO
 
   def log(msg)
     puts "#{ Time.now }: #{ msg }"
-  end
+  end # fixme: move method to some more appropriate class
 
   def say(msg)
     @connection.update(msg)
@@ -193,16 +195,21 @@ class MicroBlogMessagingIO
   end # fixme: + add tests
 
 
+  # 1st message received on Twitter: 1158336454
   def latest_mention=(new_latest_ID)
     set_latest_message_id(:mentions, new_latest_ID)
   end # fixme: + add tests
   alias_method :latest_mention_received=, # Deprecated. Old name
+               :latest_mention=
+  alias_method :latest_message_received=, # Deprecated. Old name
                :latest_mention=
 
   def latest_mention
     return get_latest_message_id(:mentions)
   end # fixme: + add tests
   alias_method :latest_mention_received, # Deprecated. Old name
+               :latest_mention
+  alias_method :latest_message_received, # Deprecated. Old name
                :latest_mention
 
 
