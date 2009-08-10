@@ -22,16 +22,22 @@ Anyways, here's what I know for sure what you need to get the bot run:
 * On Debian, aside of just the main Ruby package, you will need to install
   the +ruby-dev+ package also, so you'll get +mkmf+.
 
-=== Patching gem twitter 0.4.1
+
+=== Patching gem twitter 0.4.1 or 0.6.12
 
 During development I stumbled upon some minor flaws in the underlying Twitter
 gem the micro-blogging bot uses. While the flaws are there, the bot may not
 work properly in all its aspects.
 
-As there's apparently not yet any new version of the Twitter out yet, I
-include patches for that gem. So prior to launching the bot you need to make
-sure the patch is in place. You do so by actually patching the Twitter gem.
+There are different issues with and patches for twitter gem 0.4.1 and twitter
+gem 0.6.12.
 
+As we currently rely on the specific gem versions, I include patches for them. 
+So prior to launching the bot you need to make sure the respective patch is in 
+place. You do so by actually patching the Twitter gem.
+
+
+==== Patching gem twitter 0.4.1
 
 In patches/gems/twitter-0.4.1/lib/twitter/ there is a file named
 base.wrs.diff. That is the patch. You apply it by copying it to where the
@@ -40,7 +46,19 @@ twitter-0.4.1/lib/twitter/). Then you execute this command:
 
 	$ patch base.rb base.wrs.diff
 
-And that's it.
+And that's it for 0.4.1
+
+
+==== Patching gem twitter 0.6.12
+In patches/gems/twitter-0.6.12/lib/twitter/ there is a file named
+add_public_timeline_method.patch. That is the patch. You apply it by copying 
+it to where the twitter gem's base.rb file resides (helpful: locate
+twitter-0.6.12/lib/twitter/). Then you execute this command:
+
+	$ patch base.rb add_public_timeline_method.patch
+
+And that's it for 0.6.12
+
 
 == Bot account data
 
@@ -100,6 +118,7 @@ handy to be able to switch between different services just by changing the
 +service+ line of the +account+ block. Remember the Fail Whales phase of
 Twitter? There you have it. Just switch to the alternative then.
 
+
 === How do I get the actual credentials files?
 
 Simple: In your +my-identibot.yaml+, set +service+ to +identica+, in
@@ -109,6 +128,7 @@ your choice.
 +my-identibot.yaml+ and +my-twitterbot.yaml+ are for tests, but if Twitter
 fail whales +my-bot.yaml+ is your place to go to switch to an alternative
 service.
+
 
 === Sections of the credentials file(s)
 
@@ -136,11 +156,13 @@ the +identica+ block, rename it appropriately, update login, peer and
 supervisor fields, and the +use_alternative_api+ field. Finally, set
 +service+ in the +account+ block to your new service.
 
+
 === Feel free to delete
 
 In any of the credentials files mentioned above, you are free to delete the
 blocks you don't need. Essential are only the +account+ block and that
 service block the +account+ block+ refers to.
+
 
 == Get a first impression Launch & Shutdown
 
@@ -162,6 +184,7 @@ To shut down, give
 	@yourbotname shutdown
 
 through the service.
+
 
 == Dealing with down times of a service
 
@@ -191,11 +214,13 @@ set +twitter+ to +false+ once it nags again, and develop against Identica
 only, for a while. Just make sure you re-enable it later and run your tests
 against Twitter too.
 
+
 = Benefits
 * All base classes are diligently tested and girdled with tests, therefore if
   modifications are going to break anything, you will know quickly.
 * Simple command and answer bots can be done in a matter of minutes, just by
   modifying the +@commands+ hash of +MicroBlogBot+.
+
 
 = Known shortcomings
 
@@ -215,10 +240,12 @@ against Twitter too.
 * It's untested what might happen once a followee decides to change their
   nick name.
 
+
 = Author
 
 This micro-blogging chat bot mini-framework was developed in January/February
 2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com> aka @dagobart aka A.F.
+
 
 = Contribute to the MicroBlogBot framework
 

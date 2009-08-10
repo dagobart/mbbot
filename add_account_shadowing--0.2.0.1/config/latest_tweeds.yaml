@@ -1,16 +1,22 @@
 --- 
-mentions: 
-  identica: 7460412
 inbox_latest: 
-  identica: "7314286"
-  twitter: "2841581731"
+  identica: 7811217
+  twitter: 3208939028
+mentions: 
+  identica: 7860550
+  twitter: 3208939028
 friends_timeline: 
-  identica: 7447885
+  identica: 7860550
+  twitter: 3208939028
 public_timeline: 
-  identica: 7447885
+  identica: 7860550
+  twitter: 3208939028
+incoming_DMs: 
+  identica: 17676
+  twitter: 287102460
 own_timeline: 
-  identica: 7472179
-incoming_PMs: 
-  identica: 7447885
+  identica: 7858541
+  twitter: 3208939028
 replies: 
-  identica: 7460412
+  identica: 7860550
+  twitter: 3208939028

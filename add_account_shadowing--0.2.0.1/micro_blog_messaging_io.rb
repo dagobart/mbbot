@@ -23,6 +23,12 @@ class MicroBlogMessagingIO
   # If you've got an idea how to improve the latest message ID storage,
   # please let me know. -- @dagobart/20090129
   def initialize(connector, skip_catchup = false)
+    @message_type__message_stream_type = {
+            :own_timeline => :user,
+         :public_timeline => :public,
+        :friends_timeline => :friends
+    }
+
     @connector = connector
     @connection = @connector.connection
 
@@ -37,24 +43,91 @@ class MicroBlogMessagingIO
   #        issue an initialization of all missing values to the now current
   #        message ID
 
-  # returns the ID of the most current message currently receivable from the uB
-  # service 
-  def now_current_message_id
-    return @connection.timeline(:public, :count => 1).first.id.to_i
+  # +@connection.timeline+ doesn't exist for twitter gem > v0.6.12, therefore
+  # we add a timeline() method of our own
+  #
+  # fixme: add an interfacing class that provides an interface between gems
+  # that enables (us) to access µB services and, to the other side, provides
+  # a common interface to the bot; also, the class should feature
+  # functionality which the respective gem currently lacks, say -- which is
+  # missing in twitter gem 0.6.12 -- a public_timeline(). --- Then remove all
+  # the stuff that deals with different gem versions/µB services from the
+  # core bot classes and leave such stuff to the interfacing class only
+  # Particularly, I've got the twitter4r gem in mind and alternative µB
+  # services such as what is used on github.
+  def timeline(message_stream_type, options = {})
+    if USE_GEM_0_4_1 then
+      return @connection.timeline(message_stream_type, options)
+    else
+      if    message_stream_type ==    :user then
+        return @connection.user_timeline(options)
+      elsif message_stream_type ==  :public then    # fixme: patched new method
+        return @connection.public_timeline(options) # into 0.6.12 twitter gem
+      elsif message_stream_type == :friends then
+        return @connection.friends_timeline(options)
+      else
+        return nil
+      end
+    end
   end
 
-  def skip_catchup # FIXME: initializes values invalidly since every kind of msg stream may have its own counter
-    latest_message = now_current_message_id
+  # returns the ID of the most current message currently receivable from the uB
+  # service 
+  def now_current_message_id(message_type)
+    message_stream_type = @message_type__message_stream_type[message_type]
 
-    [:own_timeline, :public_timeline, :friends_timeline, 
-     :incoming_DMs, :mentions, :replies].each do |msg_type|
-       @latest_messages[msg_type.to_s] = 
-         { @connector.service_in_use => latest_message }
+    if message_stream_type then
+      messages_stream = timeline(message_stream_type, :count => 1)
+    elsif (message_type == :incoming_DMs) then
+      messages_stream = @connection.direct_messages(:count => 1)
+    elsif (message_type == :mentions) ||
+          (message_type == :replies)  then
+      messages_stream = @connection.replies(:count => 1)
+    end       # The above 'replies' ^^^^^^^ actually refers to mentions.
+              # Misnomer of the Twitter 0.4.1 gem, but fault courtesy of
+              # twitter.com as they replaced replies by mentions.
+
+    return messages_stream.first.id.to_i
+  end
+
+  def now_current_message_ids
+    message_types = @message_type__message_stream_type.keys +
+                    [:incoming_DMs, :mentions, :replies]
+
+      msg_ids = Hash.new
+      message_types.each do |key|
+        msg_ids[key] = now_current_message_id(key)
+      end
+
+    return msg_ids
+  end
+
+  def add_to_hash(hash, key, value)
+    if (hash) then
+      hash[key] = value
+    else
+      hash = { key => val }
     end
-    # puts @latest_messages.pretty_inspect
+    return hash
+  end
+
+  def skip_catchup
+    @latest_messages[:incoming_DMs.to_s] = 
+      add_to_hash(@latest_messages[:incoming_DMs.to_s], 
+                  @connector.service_in_use, 
+                  now_current_message_id(:incoming_DMs)
+                 )
+
+    now_current_public_message_id = now_current_message_id(:public_timeline)
+
+    [:public_timeline,
+     :mentions, :replies,
+     :own_timeline, :friends_timeline].each do |msg_type|
+       add_to_hash(@latest_messages[msg_type.to_s], 
+                   @connector.service_in_use, now_current_public_message_id)
+    end
+    # puts @latest_messages.pretty_inspect; exit
   end # fixme: add tests
-  # fixme: create global array const that lists all the msg_types,
-  #        and use that const above
 
   def say(msg)
     @connection.update(msg)
@@ -73,10 +146,11 @@ class MicroBlogMessagingIO
   # got applied -- otherwise not.)
   def reply(msg, in_reply_to_status_id = nil, in_reply_to_user_id = nil)
     if in_reply_to_status_id && in_reply_to_user_id then
-      @connection.update(msg, {
-      				:in_reply_to_status_id => in_reply_to_status_id,
-        			  :in_reply_to_user_id => in_reply_to_user_id
-      			      }
+      @connection.update(msg, 
+                         {
+                           :in_reply_to_status_id => in_reply_to_status_id,
+                             :in_reply_to_user_id => in_reply_to_user_id
+                         }
       			)
     else
       say(msg)
@@ -206,8 +280,8 @@ class MicroBlogMessagingIO
       end
 
     processed_messages
-  end # fixme: replace string hash keys by symbol hash keys
-  # fixme: + add tests
+  end # fixme: ^ replace string hash keys by symbol hash keys
+      # fixme: + add tests
 
   def process_private_messages(messages)
     processed_messages = []
@@ -223,8 +297,8 @@ class MicroBlogMessagingIO
       end
 
     processed_messages
-  end # fixme: replace string hash keys by symbol hash keys
-  # fixme: + add tests
+  end # fixme: ^ replace string hash keys by symbol hash keys
+      # fixme: + add tests
 
   # types of message streams/messages:
   # * private direct messages ("DMs")
@@ -259,20 +333,15 @@ class MicroBlogMessagingIO
                           type = :mentions)
     msgs = []
     latest_message_id = @latest_messages[type.to_s][@connector.service_in_use]
-    message_id_current_prior_to_catching_up = self.now_current_message_id
+    message_ids_current_prior_to_catching_up = self.now_current_message_ids
 
-      if    type == :own_timeline     then
+      message_stream_type = @message_type__message_stream_type[type]
+
+      if   message_stream_type then
            msgs = process_timeline_messages(
-                    @connection.timeline(:user,
-                                         :since_id => latest_message_id))
-      elsif type == :public_timeline  then
-           msgs = process_timeline_messages(
-                    @connection.timeline(:public,
-                                         :since_id => latest_message_id))
-      elsif type == :friends_timeline then
-           msgs = process_timeline_messages(
-                    @connection.timeline(:friends,
-                                         :since_id => latest_message_id))
+#                    @connection.timeline(message_stream_type,
+                                 timeline(message_stream_type,
+                                          :since_id => latest_message_id))
       elsif type == :incoming_DMs     then
            msgs = process_private_messages(
                     @connection.direct_messages(:since_id => latest_message_id))
@@ -288,8 +357,8 @@ class MicroBlogMessagingIO
         # processing the next time we poll, and as we by now already know the
         # latest ID of :mentions, let's update their counter quickly:
         if perform_latest_message_id_update then
-          update_message_counter(:mentions, 
-                                 message_id_current_prior_to_catching_up)
+          update_message_counter(:mentions,
+                          message_ids_current_prior_to_catching_up[:mentions])
         end
       end # fixme: simplify the if/elsif conditions
 
@@ -308,7 +377,8 @@ class MicroBlogMessagingIO
       # puts msgs.pretty_inspect
 
     if perform_latest_message_id_update then
-      update_message_counter(type, message_id_current_prior_to_catching_up)
+      update_message_counter(type, 
+                             message_ids_current_prior_to_catching_up[type])
     end
 
     return msgs
