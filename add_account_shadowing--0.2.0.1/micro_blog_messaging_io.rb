@@ -164,7 +164,7 @@ class MicroBlogMessagingIO
       # FIXME: apparently doesn't work with Twitter gem 0.4.1 for
       #        identi.ca (anymore?)
 
-  # chances are that Twitter needs both pieces of data, in_reply_to_status_id
+ # chances are that Twitter needs both pieces of data, in_reply_to_status_id
   # and in_reply_to_user_id to get the message threading right. (You can
   # verify that by having a look at the look of the bot's replies within its
   # Twitter web page: If there's a "in reply to" threading got through, i.e.
@@ -182,7 +182,16 @@ class MicroBlogMessagingIO
     end
   end
 
-
+  # 14 sample tweet IDs as they appeared on Twitter, i.e. the sort order is
+  # not manually made but given by Twitter:
+  # 3203232261
+  # 3203230178    3202827120
+  # 3203177496    3202821667
+  # 3203161937    3202820108     3202286801
+  # 3202893076    3202546161     3202270208
+  #               3202516689     3202268364
+  #                              3202259068
+  #
   # fixme: make yaml file paragraph headlines match the xxx of +latest_xxx+/
   #  +latest_xxx=+, so it gets easier [for humans] to see the connection
   #  between the yaml file chunks and the methods here in the class
@@ -255,7 +264,7 @@ class MicroBlogMessagingIO
                :latest_friends_timeline_message=
 
   def latest_friends_timeline_message
-    return get_latest_message_id(:friends_timeline, new_latest_ID)
+    return get_latest_message_id(:friends_timeline)
   end # fixme: + add tests
   alias_method :latest_friend_message,          # convenience shorthand 
                :latest_friends_timeline_message
@@ -268,7 +277,7 @@ class MicroBlogMessagingIO
                :latest_incoming_DM=
 
   def latest_incoming_DM
-    return get_latest_message_id(:incoming_DMs, new_latest_ID)
+    return get_latest_message_id(:incoming_DMs)
   end # fixme: + add tests
   alias_method :latest_DM,         # convenience shorthand
                :latest_incoming_DM
