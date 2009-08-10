@@ -76,7 +76,7 @@ class MicroBlogBot
 
   def say_hello
     if USE_GEM_0_4_1 then
-      @talk.say('Starting up. Running on the old gem, cannot send DMs.')
+      @talk.say('Starting up. Running on the old gem, unable to send DMs. Will send everything in public.')
     else
       @talk.say('Starting up.')
     end

@@ -148,7 +148,7 @@ class MicroBlogMessagingIO
 
   def log(msg)
     puts "#{ Time.now }: #{ msg }"
-  end
+  end # fixme: move method to some more appropriate class
 
   def say(msg)
     @connection.update(msg)
@@ -235,6 +235,7 @@ class MicroBlogMessagingIO
                :latest_mention=
   alias_method :latest_message_received=, # Deprecated. Old name
                :latest_mention=
+# FIXME: remove all calls of deprecated method names
 
   def latest_mention
     return get_latest_message_id(:mentions)
@@ -245,14 +246,70 @@ class MicroBlogMessagingIO
                :latest_mention
 
 
-  def latest_direct_message_received
-    @latest_messages['direct_latest'][@connector.service_in_use]
-  end
+  def latest_reply=(new_latest_ID)
+    set_latest_message_id(:replies, new_latest_ID)
+  end # fixme: + add tests
+  alias_method :latest_reply_received=, # Deprecated. Old name
+               :latest_reply=
 
-  def latest_direct_message_received=(new_latest_ID)
-    @latest_messages['direct_latest'][@connector.service_in_use] = 
-      new_latest_ID
-  end
+  def latest_reply
+    return get_latest_message_id(:replies)
+  end # fixme: + add tests
+  alias_method :latest_reply_received, # Deprecated. Old name
+               :latest_reply
+
+
+  def latest_own_timeline_message=(new_latest_ID)
+    set_latest_message_id(:own_timeline, new_latest_ID)
+  end # fixme: + add tests
+  alias_method :latest_post=,                # convenience shorthand 
+               :latest_own_timeline_message=
+
+  def latest_own_timeline_message
+    return get_latest_message_id(:own_timeline)
+  end # fixme: + add tests
+  alias_method :latest_post,                # convenience shorthand 
+               :latest_own_timeline_message
+
+
+  def latest_public_timeline_message=(new_latest_ID)
+    set_latest_message_id(:public_timeline, new_latest_ID)
+  end # fixme: + add tests
+
+  def latest_public_timeline_message
+    return get_latest_message_id(:public_timeline)
+  end # fixme: + add tests
+
+
+  def latest_friends_timeline_message=(new_latest_ID)
+    set_latest_message_id(:friends_timeline, new_latest_ID)
+  end # fixme: + add tests
+  alias_method :latest_friend_message=,          # convenience shorthand 
+               :latest_friends_timeline_message=
+
+  def latest_friends_timeline_message
+    return get_latest_message_id(:friends_timeline)
+  end # fixme: + add tests
+  alias_method :latest_friend_message,          # convenience shorthand 
+               :latest_friends_timeline_message
+
+
+  def latest_incoming_DM=(new_latest_ID)
+    set_latest_message_id(:incoming_DMs, new_latest_ID)
+  end # fixme: + add tests
+  alias_method :latest_DM=,         # convenience shorthand
+               :latest_incoming_DM=
+  alias_method :latest_direct_message_received=,  # Deprecated.
+               :latest_incoming_DM=               #   Old name.
+
+  def latest_incoming_DM
+    return get_latest_message_id(:incoming_DMs)
+  end # fixme: + add tests
+  alias_method :latest_DM,         # convenience shorthand
+               :latest_incoming_DM
+  alias_method :latest_direct_message_received,  # Deprecated.
+               :latest_incoming_DM               #   Old name.
+
 
  # Note: During the collect, we do temp-store the latest received message id
   # to a temporary storage +latest_message_id+ rather than using
