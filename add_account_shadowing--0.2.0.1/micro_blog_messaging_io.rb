@@ -462,12 +462,17 @@ class MicroBlogMessagingIO
     get_latest_messages(perform_latest_reply_id_update, :replies)
   end # fixme: + add tests
 
-
   def get_latest_own_timeline_messages(perform_latest_reply_id_update = true)
     get_latest_messages(perform_latest_reply_id_update, :own_timeline)
   end # fixme: + add tests
   alias_method :get_latest_posts, :get_latest_own_timeline_messages
   # FIXME: add get_latest_*() for the other possible message streams
+
+  def get_latest_direct_messages(perform_latest_direct_message_id_update = true)
+    get_latest_messages(perform_latest_direct_message_id_update, :incoming_DMs)
+  end
+  alias_method :get_latest_direct_msgs,  # Deprecated. Old name
+               :get_latest_direct_messages
 
   # fixme: maybe we could speed up this method by avoiding write access when
   #        @latest_messages didn't change at all in between
