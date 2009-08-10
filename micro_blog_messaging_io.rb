@@ -297,7 +297,7 @@ class MicroBlogMessagingIO
   def latest_incoming_DM=(new_latest_ID)
     set_latest_message_id(:incoming_DMs, new_latest_ID)
   end # fixme: + add tests
-  alias_method :latest_DM=,         # convenience shorthand
+  alias_method :latest_DM=,            # convenience shorthand
                :latest_incoming_DM=
   alias_method :latest_direct_message_received=,  # Deprecated.
                :latest_incoming_DM=               #   Old name.
@@ -305,57 +305,186 @@ class MicroBlogMessagingIO
   def latest_incoming_DM
     return get_latest_message_id(:incoming_DMs)
   end # fixme: + add tests
-  alias_method :latest_DM,         # convenience shorthand
+  alias_method :latest_DM,            # convenience shorthand
                :latest_incoming_DM
   alias_method :latest_direct_message_received,  # Deprecated.
                :latest_incoming_DM               #   Old name.
 
 
- # Note: During the collect, we do temp-store the latest received message id
+  # +type+ - any of these: [:own_timeline, :public_timeline, :friends_timeline,
+  #  :mentions, :replies, :incoming_DMs]
+  # +latest_received_message_id+ - the ID of the most currently received message
+  #  i.e.: Usually, whenever the bot polls for new messages, it does so for the
+  #  messages between the latest one polled and the most current one available
+  #  at the service. The ID of that most current one received is the ID you'd
+  #  provide as +latest_received_message_id+.
+  #
+  # Note: Why do we store the +latest_received_message_id+ rather than the ID
+  #  of the latest message of the given type? Because: The latest messages poll
+  #  covers all the messages received in between of the previously latest known
+  #  message and the now latest known message. Therefore processing covers all
+  #  that range also, even if there are messages past the latest known message
+  #  _of_ _type_. But none of those messages past the latest one of +type+,
+  #  well, _is_ of +type+. Therefore, for the next poll, it's safe to skip
+  #  that remainder too. Therefore, we store +latest_received_message_id+, not
+  #  the ID of the latest known message of +type+.
+  def update_message_counter(type, latest_received_message_id)
+    set_latest_message_id(type, latest_received_message_id)
+  end # fixme: + add tests
+
+
+  # process_timeline_messages() and process_private_messages()
+  # take an array of messages as received by the twitter gem.
+  # Each of these method processes each of the messages of either array
+  # and turns them into simplified message hashes suitable for the bot.
+  # The difference between both methods lies in what they fill in to
+  # the +screen_name+ and +user_id+ user fields; however, after
+  # processing both methods return a stream of messages which feature
+  # the same hash keys (read: the same structure).
+  def process_timeline_messages(messages)
+    processed_messages = []
+
+      messages.each do |msg|
+        processed_messages << {
+	  		         'created_at' => msg.created_at,
+				         'id' => msg.id.to_i,
+			        'screen_name' => msg.user.screen_name,
+				       'text' => msg.text,
+				    'user_id' => msg.user.id
+	  		    }
+      end
+
+    processed_messages
+  end # fixme: ^ replace string hash keys by symbol hash keys
+      # fixme: + add tests
+
+  # process_timeline_messages() and process_private_messages()
+  # take an array of messages as received by the twitter gem.
+  # Each of these method processes each of the messages of either array
+  # and turns them into simplified message hashes suitable for the bot.
+  # The difference between both methods lies in what they fill in to
+  # the +screen_name+ and +user_id+ user fields; however, after
+  # processing both methods return a stream of messages which feature
+  # the same hash keys (read: the same structure).
+  def process_private_messages(messages)
+    processed_messages = []
+
+      messages.each do |msg|
+        processed_messages << {
+	  		         'created_at' => msg.created_at,
+				         'id' => msg.id.to_i,
+			        'screen_name' => msg.sender_screen_name,
+				       'text' => msg.text,
+				    'user_id' => msg.sender_id
+	  		       }
+      end
+
+    processed_messages
+  end # fixme: ^ replace string hash keys by symbol hash keys
+      # fixme: + add tests
+
+  # types of message streams/messages:
+  # * private direct messages ("DMs")
+  # ** incoming DMs
+  # ** outgoing DMs
+  #
+  # * global public timeline
+  # ** incoming globally visible messages
+  # *** mentions of self (immediately readable//accessible as 'mentions')
+  # **** replies/public messages directed at self
+  # ** no outgoing messages
+  #
+  # * friends' timeline
+  # ** incoming for self visible messages
+  # *** mentions of self (immediately readable//accessible as 'mentions')
+  # **** replies/public messages directed at self ("replies")
+  # ** no outgoing messages
+  #
+  # * own timeline
+  # ** outgoing own posts
+  # ** no incoming messages
+  #
+  # message streams yet known as relevant:
+  # * incoming DMs: for commands, requests
+  # * replies: for commands, requests
+  # * friends' timeline: for incoming messages forwarding
+  # * own timeline: for shadow bot commanding
+  # * mentions: for got-mentioned detection/connecting with not yet known peers
+  # ** + add method that gets mentions only, ie. w/o replies in between
+  #(* public timeline: for keyword detection)
+  def get_latest_messages(perform_latest_message_id_update = true, 
+                          type = :mentions)
+    msgs = []
+    latest_message_id = @latest_messages[type.to_s][@connector.service_in_use]
+    message_ids_current_prior_to_catching_up = self.now_current_message_ids
+
+      message_stream_type = @message_type__message_stream_type[type]
+
+      if   message_stream_type then
+           msgs = process_timeline_messages(
+#                    @connection.timeline(message_stream_type, # replacement
+                                 timeline(message_stream_type, # not yet tested
+                                          :since_id => latest_message_id))
+      elsif type == :incoming_DMs     then
+           msgs = process_private_messages(
+                    @connection.direct_messages(:since_id => latest_message_id))
+      elsif (type == :mentions)       ||   # both in one conditional since 
+            (type == :replies)        then #  replies is a subset of mentions
+           msgs = process_timeline_messages(
+                    @connection.replies(:since_id  => latest_message_id))
+                    # The above ^^^^^^^ 'replies' actually refers to mentions.
+                    # Misnomer of the Twitter 0.4.1 gem, but fault courtesy of
+                    # twitter.com as they replaced replies by mentions.
+                    #
+        # as every persistent update of the latest message counter saves 
+        # processing the next time we poll, and as we by now already know the
+        # latest ID of :mentions, let's update their counter quickly:
+        if perform_latest_message_id_update then
+          update_message_counter(:mentions,
+                          message_ids_current_prior_to_catching_up[:mentions])
+        end
+      end # fixme: simplify the if/elsif conditions
+
+      if (type == :replies) then
+        # ...then we fetched the mentions so far, thence now we need to
+        # filter out everything that's a mention, not a true reply: 
+        msgs.delete_if { |message|
+          (@bot_name        == message['screen_name']) || 
+          (/^@#{@bot_name}/ !~ message['text'])
+          # fixme: replace string hash keys by symbol hash keys
+        }
+        # The +(@bot_name == message['screen_name'])+ condition is
+        # there to prevent the bot from considering messages issued by
+        # itself as replies to it self (which might cause soliloquies).
+      end
+      # puts msgs.pretty_inspect
+
+    if perform_latest_message_id_update then
+      update_message_counter(type, 
+                             message_ids_current_prior_to_catching_up[type])
+    end
+
+    return msgs
+  end # fixme: + add tests
+
+  # Mentions are messages that mention the user's screen name pretended by an 
+  # '@' character, e.g. @dagobart.
+  # Replies are a subset of mentions: Mentions that start with the @-prepended
+  # mention of the user's name are replies.
+  #
+  # Note: During the collect, we do temp-store the latest received message id
   # to a temporary storage +latest_message_id+ rather than using
   # latest_mention_received(). That's for performance: Using
-  # latest_mention_received() would involve the use of several hashes rather
-  # than just updating a single fixnum.
-  def get_latest_replies(perform_latest_message_id_update = true)
-    latest_message_id = self.latest_mention_received
+  # latest_mention_received would involve the use of several hashes rather
+  # than just updating a single Fixnum.
+  def get_latest_mentions(perform_latest_reply_id_update = true)
+    get_latest_messages(perform_latest_reply_id_update, :mentions)
+  end # fixme: + add tests
 
-      latest_replies = []
-      @connection.replies(:since_id => latest_message_id).each do |reply|
-        msg = reply.text
+  def get_latest_replies(perform_latest_reply_id_update = true)
+    get_latest_messages(perform_latest_reply_id_update, :replies)
+  end # fixme: + add tests
 
-        # though Twitter handles replies correctly, identi.ca falsely claims
-        # everything to be a reply that just contains '@logbot' (i.e. the
-        # bot's user name) _somewhere_ in a message body, so even if
-        # completely unrelated, such as '@dagobart, @logbot is great'.
-        # Therefore, we fix that by +(/^@#{bot_name}/ =~ msg)+ below; the
-        # attached +!(sender_name == bot_name)+ is only there to prevent the
-        # bot from chatting with itself.
-        bot_name = @connector.username
-        sender_name = reply.user.screen_name
-
-        if (/^@#{bot_name}/ =~ msg) && !(sender_name == bot_name) then # FIXME: add tests for both of these conditions
-          # take side-note(s):
-          id = reply.id.to_i
-          latest_message_id = id if (id > latest_message_id.to_i)
-
-          # perform actual collect:
-          latest_replies << {
-			       'created_at' => reply.created_at,
-				       'id' => id,
-			      'screen_name' => sender_name,
-				     'text' => msg,
-				  'user_id' => reply.user.id
-			    }
-        # else
-        #  puts "'#{msg}'"
-        end
-      end
-      # puts latest_replies.pretty_inspect
-
-    self.latest_mention_received = latest_message_id if perform_latest_message_id_update
-
-    return latest_replies
-  end
 
   def get_latest_direct_msgs(perform_latest_message_id_update = false)
     latest_direct_message_id = self.latest_direct_message_received
