@@ -22,24 +22,22 @@ class MicroBlogMessagingIO
   # If you've got an idea how to improve the latest message ID storage,
   # please let me know. -- @dagobart/20090129
   #
-  # The +friending+ param refers to a +MicroBlogFriending+ object, and
-  # best practice is to give to it the +MicroBlogFriending+ object that
-  # is used by micro_blog_bot.rb too. It is needed for sending direct
-  # messages in case the sending of the message as a private message
-  # fails (or is impossible at all because the underlying twitter gem
-  # doesn't support sending direct messages).
+  # The +friending+ param refers to a +MicroBlogFriending+ object. Give
+  # to it the +MicroBlogFriending+ object that is used by micro_blog_bot.rb 
+  # too. It is needed in case sending direct messages fails (or is impossible
+  # at all because the underlying twitter gem -- e.g. v0.4.1 -- doesn't
+  # support sending direct messages).
   def initialize(connector, friending, skip_catchup = false)
     @message_type__message_stream_type = {
             :own_timeline => :user,
          :public_timeline => :public,
         :friends_timeline => :friends
-    }
+    } # fixme: make this a const, and move it to the consts file
 
     @friending = friending
 
     @connector = connector
     @connection = @connector.connection
-
     @bot_name   = @connector.username
 
     @latest_messages =    # fixme: rename ..._TWEED_... to ..._TWEET_...
@@ -49,7 +47,7 @@ class MicroBlogMessagingIO
   # FIXME: in case of missing initial values (= missing entries in the yaml
   #        file) for the service the bot currently is assigned to, we should
   #        issue an initialization of all missing values to the now current
-  #        message ID
+  #        message ID, just like with skip_catchup()
 
   # +@connection.timeline+ doesn't exist for twitter gem > v0.6.12, therefore
   # we add a timeline() method of our own
@@ -114,7 +112,7 @@ class MicroBlogMessagingIO
     if (hash) then
       hash[key] = value
     else
-      hash = { key => val }
+      hash = { key => value }
     end
     return hash
   end
@@ -131,8 +129,9 @@ class MicroBlogMessagingIO
     [:public_timeline,
      :mentions, :replies,
      :own_timeline, :friends_timeline].each do |msg_type|
-       add_to_hash(@latest_messages[msg_type.to_s], 
-                   @connector.service_in_use, now_current_public_message_id)
+      @latest_messages[msg_type.to_s] = 
+        add_to_hash(@latest_messages[msg_type.to_s], 
+                    @connector.service_in_use, now_current_public_message_id)
     end
     # puts @latest_messages.pretty_inspect; exit
   end # fixme: add tests
