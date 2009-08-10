@@ -27,7 +27,13 @@ class MicroBlogMessagingIO
   # too. It is needed in case sending direct messages fails (or is impossible
   # at all because the underlying twitter gem -- e.g. v0.4.1 -- doesn't
   # support sending direct messages).
-  def initialize(connector, friending)
+  def initialize(connector, friending, skip_catchup = false)
+    @message_type__message_stream_type = {
+            :own_timeline => :user,
+         :public_timeline => :public,
+        :friends_timeline => :friends
+    } # fixme: make this a const, and move it to the consts file
+
     @friending = friending
 
     @connector = connector
@@ -36,7 +42,101 @@ class MicroBlogMessagingIO
 
     @latest_messages =    # fixme: rename ..._TWEED_... to ..._TWEET_...
       YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
+    self.skip_catchup if skip_catchup
+    # puts @latest_messages.inspect; exit
   end
+  # FIXME: in case of missing initial values (= missing entries in the yaml
+  #        file) for the service the bot currently is assigned to, we should
+  #        issue an initialization of all missing values to the now current
+  #        message ID, just like with skip_catchup()
+
+  # +@connection.timeline+ doesn't exist for twitter gem > v0.6.12, therefore
+  # we add a timeline() method of our own
+  #
+  # fixme: add an interfacing class that provides an interface between gems
+  # that enables (us) to access µB services and, to the other side, provides
+  # a common interface to the bot; also, the class should feature
+  # functionality which the respective gem currently lacks, say -- which is
+  # missing in twitter gem 0.6.12 -- a public_timeline(). --- Then remove all
+  # the stuff that deals with different gem versions/µB services from the
+  # core bot classes and leave such stuff to the interfacing class only
+  # Particularly, I've got the twitter4r gem in mind and alternative µB
+  # services such as what is used on github.
+  def timeline(message_stream_type, options = {})
+    if USE_GEM_0_4_1 then
+      return @connection.timeline(message_stream_type, options)
+    else
+      if    message_stream_type ==    :user then
+        return @connection.user_timeline(options)
+      elsif message_stream_type ==  :public then    # fixme: patched new method
+        return @connection.public_timeline(options) # into 0.6.12 twitter gem
+      elsif message_stream_type == :friends then
+        return @connection.friends_timeline(options)
+      else
+        return nil
+      end
+    end
+  end
+
+  # returns the ID of the most current message currently receivable from the uB
+  # service 
+  def now_current_message_id(message_type)
+    message_stream_type = @message_type__message_stream_type[message_type]
+
+    if message_stream_type then
+      messages_stream = timeline(message_stream_type, :count => 1)
+    elsif (message_type == :incoming_DMs) then
+      messages_stream = @connection.direct_messages(:count => 1)
+    elsif (message_type == :mentions) ||
+          (message_type == :replies)  then
+      messages_stream = @connection.replies(:count => 1)
+    end       # The above 'replies' ^^^^^^^ actually refers to mentions.
+              # Misnomer of the Twitter 0.4.1 gem, but fault courtesy of
+              # twitter.com as they replaced replies by mentions.
+
+    return messages_stream.first.id.to_i
+  end
+
+  def now_current_message_ids
+    message_types = @message_type__message_stream_type.keys +
+                    [:incoming_DMs, :mentions, :replies]
+
+      msg_ids = Hash.new
+      message_types.each do |key|
+        msg_ids[key] = now_current_message_id(key)
+      end
+
+    return msg_ids
+  end
+
+  def add_to_hash(hash, key, value)
+    if (hash) then
+      hash[key] = value
+    else
+      hash = { key => value }
+    end
+
+    return hash
+  end
+
+  def skip_catchup
+    @latest_messages[:incoming_DMs.to_s] = 
+      add_to_hash(@latest_messages[:incoming_DMs.to_s], 
+                  @connector.service_in_use, 
+                  now_current_message_id(:incoming_DMs)
+                 )
+
+    now_current_public_message_id = now_current_message_id(:public_timeline)
+
+    [:public_timeline,
+     :mentions, :replies,
+     :own_timeline, :friends_timeline].each do |msg_type|
+      @latest_messages[msg_type.to_s] = 
+        add_to_hash(@latest_messages[msg_type.to_s], 
+                    @connector.service_in_use, now_current_public_message_id)
+    end
+    # puts @latest_messages.pretty_inspect; exit
+  end # fixme: add tests
 
   def cut_to_tweet_length(msg)
     return ( (msg.length > 140) ? "#{ msg[0, 136] }..." : msg )
