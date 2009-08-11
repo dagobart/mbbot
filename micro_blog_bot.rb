@@ -1,12 +1,9 @@
 main_dir = File.join(File.dirname(__FILE__), '')
-# require (main_dir + 'micro_blog_connector')
-# require (main_dir + 'micro_blog_friending')
-# require (main_dir + 'micro_blog_messaging_io')
-# require (main_dir + 'Token') # FIXME: rename Token.rb to token.rb
+require (main_dir + 'micro_blog_connector')
+require (main_dir + 'micro_blog_friending')
+require (main_dir + 'micro_blog_messaging_io')
+require (main_dir + 'Token') # FIXME: rename Token.rb to token.rb
 require 'dbm'
-%w{ Token micro_blog_connector micro_blog_friending micro_blog_messaging_io }.each do |lib|
-    require(main_dir + lib)
-end
 
 # This piece of software is released under the
 # Lesser GNU General Public License version 3.
@@ -30,8 +27,8 @@ class MicroBlogBot
     @supervisor = @connector.supervisor
 
     @shutdown = false
-    puts "To shut down the bot, @#{@supervisor} must issue 'shutdown'" + 
-         " to @#{@bot_name}."
+    puts "To shut down the bot, on #{@connector.service_in_use.capitalize}," +
+         " @#{@supervisor} must issue 'shutdown' to @#{@bot_name}."
     puts "Alternatively, on SIGINT, the bot will forget that it already"
     puts "processed the most recent received messages and re-process them"
     puts "the next time (and annoy followers by that).", ''
@@ -84,8 +81,9 @@ class MicroBlogBot
 
   # be nice to new followers
   def catch_up_with_followers
-    welcome_message = "Welcome! Thanks for the follow! Send" +
-                      " '@#{@bot_name} help' for help. You can DM me too!"
+    welcome_message = "Welcome! Thanks for the follow! Send '@#{@bot_name}" +
+                      " help' for help. You can DM me too! Note: I'm not" +
+                      " always online."
 
     @friending.new_followers.each do |new_follower|
       DBM.open('followerwelcomes') do  |db| 
@@ -107,6 +105,8 @@ class MicroBlogBot
       end
     end
   end # FIXME: + add test
+      # fixme: maybe this would be better put into the connector, with an
+      #        optional welcome string
 
   # +waittime+: Twitter suggests 60s: http://is.gd/j15G -- 15s gets us
   #             blacklisted on Twitter
@@ -124,53 +124,75 @@ class MicroBlogBot
       process_latest_received
       @talk.persist
       unless @shutdown
-        @talk.log "[status] sleeping for #{waittime} seconds..."
+        @talk.log "[status] sleeping for #{waittime} seconds...\n \b"
         sleep waittime
       end
     end
-  end # FIXME: + somewhere add a general output-to-console state() method
+  end
 
-  # FIXME: if a reply and a DM get received during the same run of 
-  # process_latest_received(), the DM will not be answered, not even by 
-  # the next run of process_latest_received()
   def process_latest_received
-    sorted_replies = @talk.get_latest_replies.sort{|a,b| a['id'].to_i <=> b['id'].to_i}
-    sorted_replies.each do |msg|
-      if (@talk.latest_mention_received <= msg['id'].to_i) then
-        if USE_GEM_0_4_1 then # twitter gem v0.4.1 may raise an error
-          begin
-            answer_message(msg)
-          rescue Twitter::CantConnect
-            puts @connector.errmsg(Twitter::CantConnect)
+    [:replies, :incoming_DMs].each do |type|
+      latest_sucessfully_answered = nil
+
+        @talk.get_latest_messages(false, type).each do |msg|
+          unless @shutdown then  #^^^^^ false to avoid to accidentally persist
+            answer_message(msg)  # the ID of any not yet answered message
+
+            # won't be set on//if:
+            #  either @shutdown==true
+            #  or answer_message() raising an exception
+            latest_sucessfully_answered = msg
           end
-        else
-          answer_message(msg)
         end
-        @talk.latest_mention_received = msg['id'].to_i + 1
-      else
-        @talk.log "[status] Skipping ID: " + msg['id'].to_s + "\t" + msg['text'].to_s + "\n"
-      end
-    end
-    
-    tdirect_msgs = @talk.get_latest_direct_msgs
-    sorted_direct_msgs = tdirect_msgs.sort{|a,b| a['id'].to_i <=> b['id'].to_i}
-    sorted_direct_msgs.each do |direct_msg|
-      if (@talk.latest_direct_message_received <= direct_msg['id'].to_i) then
-        if USE_GEM_0_4_1 then # twitter gem v0.4.1 may raise an error
-          begin
-            answer_message(direct_msg)
-          rescue Twitter::CantConnect
-            puts @connector.errmsg(Twitter::CantConnect)
-          end
-        else
-          answer_message(direct_msg)
-        end
-        @talk.latest_direct_message_received = direct_msg['id'].to_i + 1
-      else
-        @talk.log "[status] Skipping ID: " + direct_msg['id'].to_s + "\t" + direct_msg['text'].to_s + "\n"
+
+      # Make sure we don't persist a message's ID unless we actually 
+      # answered it:
+      if (latest_sucessfully_answered) then
+        @talk.set_latest_message_id(type,
+           @talk.processed_message_id(latest_sucessfully_answered)) # + 1
       end
     end
   end
+  # Twitter::CantConnect happens if a shutdown gets processed before all the received messages got processed; => FIXME: remove Twitter::CantConnect rescues from thorough the code
+
+#  def process_latest_received
+#    sorted_replies = @talk.get_latest_replies.sort{|a,b| a['id'].to_i <=> b['id'].to_i}
+#    sorted_replies.each do |msg|
+#      if (@talk.latest_mention_received <= msg['id'].to_i) then
+#        if USE_GEM_0_4_1 then # twitter gem v0.4.1 may raise an error
+#          begin
+#            answer_message(msg)
+#          rescue Twitter::CantConnect
+#            puts @connector.errmsg(Twitter::CantConnect)
+#          end
+#        else
+#         answer_message(msg)
+#        end
+#        @talk.latest_mention_received = msg['id'].to_i + 1
+#      else
+#        @talk.log "[status] Skipping ID: " + msg['id'].to_s + "\t" + msg['text'].to_s + "\n"
+#      end
+#    end
+#    
+#    tdirect_msgs = @talk.get_latest_direct_msgs
+#    sorted_direct_msgs = tdirect_msgs.sort{|a,b| a['id'].to_i <=> b['id'].to_i}
+#   sorted_direct_msgs.each do |direct_msg|
+#      if (@talk.latest_direct_message_received <= direct_msg['id'].to_i) then
+#        if USE_GEM_0_4_1 then # twitter gem v0.4.1 may raise an error
+#          begin
+#            answer_message(direct_msg)
+#          rescue Twitter::CantConnect
+#           puts @connector.errmsg(Twitter::CantConnect)
+#          end
+#        else
+#          answer_message(direct_msg)
+#        end
+#        @talk.latest_direct_message_received = direct_msg['id'].to_i + 1
+#      else
+#        @talk.log "[status] Skipping ID: " + direct_msg['id'].to_s + "\t" + direct_msg['text'].to_s + "\n"
+#      end
+#    end
+#  end
 
   # . Uses ~Twitter message threading, i.e. refers to the message ID we're
   #   responding to.

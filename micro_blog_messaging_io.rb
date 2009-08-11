@@ -40,6 +40,9 @@ class MicroBlogMessagingIO
     @connection = @connector.connection
     @bot_name   = @connector.username
 
+    @prev_outgoing_DM   = ''
+    @prev_outgoing_post = ''
+
     @latest_messages =    # fixme: rename ..._TWEED_... to ..._TWEET_...
       YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
     self.skip_catchup if skip_catchup
@@ -151,33 +154,46 @@ class MicroBlogMessagingIO
   end # fixme: move method to some more appropriate class
 
   def say(msg)
-    @connection.update(msg)
-    
-    # help//support us learn about new developments in our relationships
-    # to our followees:
-    log((msg =~ /^@/) ? msg : "[post] #{ msg }")
-  end
-
-  def direct_msg(user_id, msg)
-    username = @friending.username_by_id(user_id)
-    public_version_of_message = 
-      cut_to_tweet_length( prepend_username_to_message( username, msg ) )
-
-    if USE_GEM_0_4_1 then # twitter gem 0.4.1 cannot DM
-      # a +return+ must be w/i an if rather than in a +return ... if...+
-      return say(public_version_of_message)
-    end
-
-    begin
-      @connection.direct_message_create(user_id, msg)
+    # avoid dupes:
+    if msg != @prev_outgoing_post then
+      @connection.update(msg) 
+      @prev_outgoing_post = msg
 
       # help//support us learn about new developments in our relationships
       # to our followees:
-      log("d #{ username } #{ msg }")
-    rescue Twitter::TwitterError => e
-      puts "*** Twitter Error in sending a direct message to @#{ username }: " + e.message
-      puts "    attempting regular reply"
-      say(public_version_of_message)
+      log((msg =~ /^@/) ? msg : "[post] #{ msg }")
+    else
+      log("*** prevented dupe post:\n    #{ msg }")
+    end
+  end
+
+  def direct_msg(user_id, msg)
+    if msg == @prev_outgoing_DM then
+      log("*** prevented dupe direct message:\n    #{ msg }")
+    else
+      username = @friending.username_by_id(user_id)
+      public_version_of_message = 
+        cut_to_tweet_length( prepend_username_to_message( username, msg ) )
+
+      if USE_GEM_0_4_1 then # twitter gem 0.4.1 cannot DM
+        # a +return+ must be w/i an if rather than in a +return ... if...+
+        return say(public_version_of_message)
+      end
+
+      begin
+        @connection.direct_message_create(user_id, msg)
+
+          # help//support us learn about new developments in our relationships
+          # to our followees:
+          log("d #{ username } #{ msg }")
+
+        @prev_outgoing_DM = msg
+      rescue Twitter::TwitterError => e
+        puts "*** Twitter Error in sending a direct message to @#{ username }: " +
+             e.message
+        puts "    attempting regular reply"
+        say(public_version_of_message)
+      end
     end
   end
 
@@ -383,6 +399,12 @@ class MicroBlogMessagingIO
   end # fixme: ^ replace string hash keys by symbol hash keys
       # fixme: + add tests
 
+  # +processed_message+: single message as received from process_private_messages()/process_timeline_messages()
+  def processed_message_id(processed_message)
+    return processed_message['id'].to_i # fixme: remove hard-coded 'id'
+  end
+  # fixme: remove homonymy: discern processed message from message-as-received-from-the-twitter-gem from message-as-text-string
+
   # types of message streams/messages:
   # * private direct messages ("DMs")
   # ** incoming DMs
@@ -464,7 +486,7 @@ class MicroBlogMessagingIO
                              message_ids_current_prior_to_catching_up[type])
     end
 
-    return msgs
+    return msgs.reverse # reverse: sort from oldest to youngest
   end # fixme: + add tests
 
   # Mentions are messages that mention the user's screen name pretended by an 
@@ -484,7 +506,6 @@ class MicroBlogMessagingIO
   def get_latest_replies(perform_latest_reply_id_update = true)
     get_latest_messages(perform_latest_reply_id_update, :replies)
   end # fixme: + add tests
-
 
   def get_latest_own_timeline_messages(perform_latest_reply_id_update = true)
     get_latest_messages(perform_latest_reply_id_update, :own_timeline)
