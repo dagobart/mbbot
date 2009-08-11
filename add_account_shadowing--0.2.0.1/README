@@ -4,6 +4,7 @@ This set of libraries and one main program -- micro_blog_bot.rb -- aims at
 simplifying automated response systems ("bots") for popular micro-blogging
 services such as Twitter.com and Identi.ca.
 
+
 == Setup
 
 After I ran the n-th times into trouble with RubyGems and some updated
@@ -20,21 +21,55 @@ Anyways, here's what I know for sure what you need to get the bot run:
   and the +echoe+ gem. (I state this explicitely, as +twitter+ 0.4.1 did not
   make RubyGems to also install +echoe+, in my case.)
 * On Debian, aside of just the main Ruby package, you will need to install
-  the +ruby-dev+ package also, so you'll get +mkmf+.
+  the +ruby-dev+ package also, so you'll get +mkmf+, and +libdbm-ruby+ too.
 
 
-=== Patching gem twitter 0.4.1 or 0.6.12
+=== Using the twitter gem
 
-During development I stumbled upon some minor flaws in the underlying Twitter
-gem the micro-blogging bot uses. While the flaws are there, the bot may not
-work properly in all its aspects.
+The bot framework relies on the twitter gem. Up to version 0.4.1 the gem
+support both, Twitter and Identica. By version 0.5.0 the gem dropped Identica
+support.
+
+Though, as Twitter itself struggles more often but Identica does, it's 
+usually more painless to develop a bot against Identica first, then switch 
+to Twitter and enforce that the bot runs well against Twitter too.
+
+To achieve that, the bot framework currently makes use of two different
+versions of the twitter gem, v0.4.1 and v0.6.12. 0.4.1 gets used when
+connecting to Identica, 0.6.12 for Twitter.
+
+There's a little price in that: 0.4.1 does not support sending direct
+messages. The bot framework handles that by sending direct messages as
+replies instead when using the 0.4.1 version of the twitter gem.
+
+This issue needs improvement. A helping hand here would be welcomed.
+
+
+==== Why developing against Identica is better
+
+Twitter restricts the number of accesses to 150 times _per_ _hour_. During 
+development this is rather inconvenient when you need to try things out. 
+Identica's restrictions are more relaxed.
+
+Even more, as Identica is free software, you can install your own Identica 
+server and develop against _that_. Despite I couldn't find a suitable 
+installation howto for Debian, I assume that by that you could drop the 
+messages-per-hour restriction to zero.
+
+
+=== Patching gem twitter 0.4.1 and 0.6.12
+
+During development I stumbled upon some minor flaws in the underlying twitter
+gem the micro-blogging bot uses, in both versions used by the bot, 0.4.1 and 
+0.6.12. While the flaws are there, the bot may not work properly in all its 
+aspects.
 
 There are different issues with and patches for twitter gem 0.4.1 and twitter
 gem 0.6.12.
 
 As we currently rely on the specific gem versions, I include patches for them. 
-So prior to launching the bot you need to make sure the respective patch is in 
-place. You do so by actually patching the Twitter gem.
+So, prior to launching the bot you need to make sure the respective patch is 
+in place. You do so by actually patching the Twitter gem.
 
 
 ==== Patching gem twitter 0.4.1
@@ -50,6 +85,7 @@ And that's it for 0.4.1
 
 
 ==== Patching gem twitter 0.6.12
+
 In patches/gems/twitter-0.6.12/lib/twitter/ there is a file named
 add_public_timeline_method.patch. That is the patch. You apply it by copying 
 it to where the twitter gem's base.rb file resides (helpful: locate
@@ -169,7 +205,7 @@ service block the +account+ block+ refers to.
 Once you're done with configuring your +my-bot.yaml+ file, you'ready to launch
 the bot. To do so, call micro_blog_bot.rb this way:
 
-	$ ruby micro_blog_bot.rb
+	$ ruby sample-bot.rb
 
 Once launched, you can interact with the bot through the micro-blogging
 service chosen. For example, try
@@ -196,10 +232,7 @@ all over the place.
 
 On testing against Identica, I never had that. So, you might conclude, then
 why not just test against Identica only? -- The answer is: Identica has other
-flaws. Such as that Identica considers every message you receive from a
-followee to be a message _addressed to_ you. Even, if it does not begin with
-your nick name. So, 'Nice guy that @dagobart' would be considered a message
-_to_ @dagobart on Identica.
+flaws.
 
 So, you don't get around to test against all the services your bot shall run
 at.
@@ -210,41 +243,48 @@ first, though I did just that sometimes, by continuing to develop, time
 passed..)
 
 However, to shortcut this, I introduced a +SERVICE_IS_AVAILABLE+ hash. Just
-set +twitter+ to +false+ once it nags again, and develop against Identica
-only, for a while. Just make sure you re-enable it later and run your tests
+set +twitter+ to +false+ once it nags again, and test against Identica only 
+for a while. Just make sure you re-enable it later and run your tests
 against Twitter too.
 
 
 = Benefits
-* All base classes are diligently tested and girdled with tests, therefore if
-  modifications are going to break anything, you will know quickly.
+* The bot is optimized for running permanently.
 * Simple command and answer bots can be done in a matter of minutes, just by
   modifying the +@commands+ hash of +MicroBlogBot+.
-
+  . dsifry introduced a tokenizer. You may want to play with that instead.
+* The chat bot can deal with public @replies and private direct messages. It
+  answers by direct messages whenever possible. -- Where direct messages are
+  not possible it uses @replies.
+* In case our bot gets followed by a user who has protected their updates (or 
+  by a user whose account got disabled by the µB service's admins between 
+  them following the bot and the bot following them back) the bot will handle 
+  the issue appropriately.
+* All base classes are diligently tested and girdled with tests, therefore if
+  modifications are going to break anything, you will know quickly.
+  . Because of major improvements, as of Aug 11, 2009 the tests are 
+    incomplete now.
 
 = Known shortcomings
 
-* Currently, the bot does not run permanently but runs a single cycle only,
-  every time you launch it manually.
-* There is no way to delete messages. Consecutively, messages generated
-  during tests don't get cleaned up afterwards. This could annoy followers of
-  your bot. (My bot lost four of the due to test messages, so far.) However,
-  you could take your chances and run tests only when your bot's followers
-  are offline.
-* Communicating by direct messages is not yet implemented.
-* In case, Twitter temporarily blacklists our IP address we will run into it
-  without any preventive measures.
-* In case our bot gets followed by a spammer, Twitter finds out before we do
-  and disables the respective account, our bot will try to follow back
-  nevertheless -- and run into an rejection by Twitter.
+* Although the bot is optimized for running permanently, there may be 
+  unhandled exceptions (i.e. crashes) that require manual restart. Sending a 
+  notification once a crash occurs would be nice. Feel free to add such.
+* There is no way to delete messages. Hence, messages generated during tests 
+  don't get cleaned up afterwards. This could annoy followers of your bot.
+  (My bot lost some of them due to test messages.) However, you could take
+  your chances and run tests only when your bot's followers are offline.
 * It's untested what might happen once a followee decides to change their
   nick name.
+* Because of those major improvements applied in July/August 2009, as of 
+  Aug 11, 2009 the tests are rather incomplete now.
 
 
-= Author
+= Authors
 
-This micro-blogging chat bot mini-framework was developed in January/February
-2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com> aka @dagobart aka A.F.
+This micro-blogging chat bot mini-framework was developed in January/February 
+and July/August 2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com> aka 
+@dagobart aka A.F. Contributions were added by David Sifry in August 2009.
 
 
 = Contribute to the MicroBlogBot framework
