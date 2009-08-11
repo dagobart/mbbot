@@ -1,0 +1,49 @@
+== most notable improvements v0.2.1 to v0.2.2
+
+* improved message stream handling by merging in
+  /branches/wrs/add_account_shadowing--0.2.0.1/
+  * added patch for twitter gem v0.6.12 to enable the bot to read the public
+    timeline
+  + added methods to handle more kinds of message other than @replies and
+    direct messages only. In total, the framework now can handle these kinds
+    of message streams: +:incoming_DMs+, +:replies+, +:mentions+,
+    +:own_timeline, :friends_timeline+ and +:public_timeline+.
+    : This way a bot based on this here framework does not need to be a chat
+      bot but can react on other messages too/alternatively.
+  + added functionality to optionally skip processing any messages received
+    between the previous shutdown and the current startup
+
+* improvements and bugfixes irrelated/less relateed to the merge:
+  ^ simplified and extended the code of the sample bot
+  ^ bot now doesn't accidentally skip answering any incoming message(s)
+    anymore
+  + added a cache for outgoing post/direct messages, to enable the bot to
+    avoid sending dupes
+  ^ reworked say() and direct_msg() to refrain from sending out dupe
+    messages
+  ^ added mention of the service the bot is currently assigne to to the
+    startup message, so we'll know which service to use to issue the
+    +shutdown+ message
+  + added a bot status logging method
+    ^ sent messages now additionally get put out to the console, for
+      supervision
+    ^ added a newline after the 'sleeping' status message, so now distinct
+      processing cycles also get visibly distinctable too
+  ^ developer doesn't need to set manually +USE_IDENTICA+ anymore
+  + added functionality to prepend a message-to-be-sent by the @adressee
+  + moved all the functionality to cut a message to the max size allowed [for
+    a message] to a single method, cut_to_tweet_length().
+
+* interface changes/modified functionality:
+  * micro_blog_messaging_io's initialize() now has +friending+ as an
+    _obligatory_ parameter
+  ^ get_latest_messages() returns [via the twitter gem] received messages in
+    reverse order now
+  ~ replaced get_latest_replies() by a completly new version
+  ~ replaced get_latest_direct_msgs() by get_latest_direct_messages()
+  ~ Replaced the term 'tweed' by 'message' to state we're not aimed at
+    Twitter alone.
+    : Flipside: now we have the term 'message' referring to message metadata
+      including objects received from the twitter gem, to message hashes used
+      for bot-internal processing of messages and to plain 140 (or more)
+      characters text messages. This homonymy needs to be resolved.

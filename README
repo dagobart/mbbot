@@ -278,6 +278,8 @@ against Twitter too.
   nick name.
 * Because of those major improvements applied in July/August 2009, as of 
   Aug 11, 2009 the tests are rather incomplete now.
+* All the class files are full of +FIXME+s and minor +fixme+s, and need
+  tidying up.
 
 
 = Authors
