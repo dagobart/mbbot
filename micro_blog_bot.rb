@@ -155,45 +155,6 @@ class MicroBlogBot
   end
   # Twitter::CantConnect happens if a shutdown gets processed before all the received messages got processed; => FIXME: remove Twitter::CantConnect rescues from thorough the code
 
-#  def process_latest_received
-#    sorted_replies = @talk.get_latest_replies.sort{|a,b| a['id'].to_i <=> b['id'].to_i}
-#    sorted_replies.each do |msg|
-#      if (@talk.latest_mention_received <= msg['id'].to_i) then
-#        if USE_GEM_0_4_1 then # twitter gem v0.4.1 may raise an error
-#          begin
-#            answer_message(msg)
-#          rescue Twitter::CantConnect
-#            puts @connector.errmsg(Twitter::CantConnect)
-#          end
-#        else
-#         answer_message(msg)
-#        end
-#        @talk.latest_mention_received = msg['id'].to_i + 1
-#      else
-#        @talk.log "[status] Skipping ID: " + msg['id'].to_s + "\t" + msg['text'].to_s + "\n"
-#      end
-#    end
-#    
-#    tdirect_msgs = @talk.get_latest_direct_msgs
-#    sorted_direct_msgs = tdirect_msgs.sort{|a,b| a['id'].to_i <=> b['id'].to_i}
-#   sorted_direct_msgs.each do |direct_msg|
-#      if (@talk.latest_direct_message_received <= direct_msg['id'].to_i) then
-#        if USE_GEM_0_4_1 then # twitter gem v0.4.1 may raise an error
-#          begin
-#            answer_message(direct_msg)
-#          rescue Twitter::CantConnect
-#           puts @connector.errmsg(Twitter::CantConnect)
-#          end
-#        else
-#          answer_message(direct_msg)
-#        end
-#        @talk.latest_direct_message_received = direct_msg['id'].to_i + 1
-#      else
-#        @talk.log "[status] Skipping ID: " + direct_msg['id'].to_s + "\t" + direct_msg['text'].to_s + "\n"
-#      end
-#    end
-#  end
-
   # . Uses ~Twitter message threading, i.e. refers to the message ID we're
   #   responding to.
   # * On identi.ca, from its creation on, the bot account had itself as
@@ -209,8 +170,7 @@ class MicroBlogBot
     screen_name = msg['screen_name']
          msg_id = msg['id']
       timestamp = msg['created_at']; timestamp.gsub!(/ \+0000/, '')
-           text = msg['text'];       text.sub!(/^@\S+\s+/, '')
-                         # formerly: text.sub!(/^@#{@bot_name}\s+/, '')
+           text = msg['text'];       text.sub!(/^@#{@bot_name}\s+/, '')
 
     	@shutdown ||= (
                               (text == 'shutdown') && 
@@ -236,13 +196,9 @@ class MicroBlogBot
     end
 
     msg2 = @talk.direct_msg(user_id, @talk.cut_to_tweet_length(answer))
-
-# line seems to contradict new, sophisticated process_latest_received(),
-# hence (?) dsifry commented this here line of code out:
-#
-#    # avoid, that the next time the bot is going to poll for new messages,
-#    # it won't consider its own ones
-#    @talk.latest_mention_received = msg.id
+    # fixme: re-enable post/reply threading by handing over +msg_id+,
+    #        and using reply() rather than say() if direct message
+    #        sending is not available/not possible
   end # fixme: + make it an option to answer publicly/privately
 
   # actually, I didn't grasp Ruby finalizing. If you do, feel free to
@@ -268,6 +224,7 @@ end
 # + create gem
 #   + check gem in to the usual gems repository
 #   + announce gem
+# + present the framework at FrOSCon
 # + if possible and useful, allow +block+s as values for the @bot_commands
 #   hash, so developing own derivate bots would become dead-simple: Just
 #   inherit your bot, then change the commands hash as you like.
