@@ -17,22 +17,30 @@ require 'dbm'
 # Suggestions? Please let me know.
 
 class MicroBlogBot
-  def initialize
+  def initialize(alternative_shutdown_info_message = '', 
+                 perform_followers_catch_up        = true, 
+                 skip_unprocessed_messages         = false)
     @connector =
          MicroBlogConnector.new( VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN )
     @friending = MicroBlogFriending.new(@connector)
-    @talk = MicroBlogMessagingIO.new(@connector, @friending)
+         @talk = MicroBlogMessagingIO.new(@connector, @friending,
+                                          skip_unprocessed_messages)
 
     @bot_name   = @connector.username
     @supervisor = @connector.supervisor
 
-    @shutdown = false
-    puts "To shut down the bot, on #{@connector.service_in_use.capitalize}," +
-         " @#{@supervisor} must issue 'shutdown' to @#{@bot_name}."
-    puts "Alternatively, on SIGINT, the bot will forget that it already"
-    puts "processed the most recent received messages and re-process them"
-    puts "the next time (and annoy followers by that).", ''
+    @perform_followers_catch_up = perform_followers_catch_up
 
+    @shutdown = false
+    if alternative_shutdown_info_message.empty? then
+      puts "To shut down the bot, on #{@connector.service_in_use.capitalize}," +
+           " @#{@supervisor} must issue 'shutdown' to @#{@bot_name}."
+      puts "Alternatively, on SIGINT, the bot will forget that it already"
+      puts "processed the most recent received messages and re-process them"
+      puts "the next time (and annoy followers by that).", ''
+    else
+      puts alternative_shutdown_info_message
+    end
     @bot_commands = {
     		      'about' => "@#{ @bot_name } is a #chat #bot built" +
                                  " by @dagobart in #Ruby on top of" +
@@ -120,7 +128,7 @@ class MicroBlogBot
     end
 
     while (!@shutdown) do
-      catch_up_with_followers
+      catch_up_with_followers if @perform_followers_catch_up
       process_latest_received
       @talk.persist
       unless @shutdown
@@ -205,6 +213,7 @@ class MicroBlogBot
   # implement a better solution than this need to call shutdown explicitly
   # each time.
   def shutdown
+    @talk.log 'shutting down...' if @shutdown
     @talk.shutdown
   end
 end
