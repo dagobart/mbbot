@@ -368,6 +368,11 @@ class MicroBlogMessagingIO
 				       'text' => msg.text,
 				    'user_id' => msg.user.id
 	  		    }
+        # fixme: should add the type of message to the hash, so in later
+        #        steps of processing it still will be possible to
+        #        determine what kind of message it originally was, e.g.
+        #        to see whether it was a private direct message or
+        #        a public post
       end
 
     processed_messages
@@ -393,6 +398,11 @@ class MicroBlogMessagingIO
 				       'text' => msg.text,
 				    'user_id' => msg.sender_id
 	  		       }
+        # fixme: should add the type of message to the hash, so in later
+        #        steps of processing it still will be possible to
+        #        determine what kind of message it originally was, e.g.
+        #        to see whether it was a private direct message or
+        #        a public post
       end
 
     processed_messages

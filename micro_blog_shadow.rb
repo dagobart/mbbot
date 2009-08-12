@@ -12,7 +12,7 @@ require (main_dir + 'micro_blog_bot')
 #
 # 
 # The aim of +MicroBlogShadow+ is to shadow the activities of the
-# account owner, listen for and executed commands found in their
+# account owner, listen for and execute commands found in their
 # output stream, and to inject the results of those commands back
 # into the very same output stream.
 #
