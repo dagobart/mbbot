@@ -7,8 +7,14 @@ require (main_dir + 'micro_blog_bot')
 # Copyright (c) 2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com>
 #
 #
-# Follow me on Twitter or Identi.ca, where you'll find me as @dagobart but
-# under the first name/last name pseudonyme A.F.
+# Follow me on Twitter or Identi.ca, where you'll find me as @dagobart
+# but under the first name/last name pseudonyme A.F.
+#
+# 
+# The aim of +MicroBlogShadow+ is to shadow the activities of the
+# account owner, listen for and executed commands found in their
+# output stream, and to inject the results of those commands back
+# into the very same output stream.
 #
 # Suggestions? Please let me know.
 
@@ -44,25 +50,27 @@ class MicroBlogShadow < MicroBlogBot
       @talk.latest_post = 
         @talk.processed_message_id(latest_sucessfully_examined) # + 1
     end
-  end
+  end # fixme: + destroy message if it was a bot command
 
   def grasp_shutdown(msg)
     screen_name = msg['screen_name']
-           text = msg['text'];
+       msg_text = msg['text'];
       timestamp = msg['created_at']; timestamp.gsub!(/ \+0000/, '')
 
-    text = text.strip.downcase
+    text = msg_text.strip.downcase
     @shutdown ||= ( (screen_name == @bot_name) && (text == 'shutdown') )
  
-    @talk.log "received '#{text}' by @#{screen_name} at #{timestamp}"
-  end # FIXME: remove hard-coded strings incl. hard-coded 'shutdown' command
-      # fixme: + destroy message if it was a shutdown message
-      # FIXME: 20090729: msg deletion on identi.ca apparently doesn't work anymore.
-      #                  Though, it'd be better if commands issued at the bot would
-      #                  go deleted as soon as processed by the bot.
+    @talk.log "received '#{msg_text}' by @#{screen_name} at #{timestamp}"
+  end # FIXME: remove hard-coded strings incl. hard-coded 'shutdown'
+      #         command
+      # FIXME: 20090729: on identi.ca, msg deletion apparently doesn't
+      #                  work. Though, it'd be better if commands
+      #        issued at the bot would go deleted as soon as processed
+      #        by the bot.
 end
 
 shadow = MicroBlogShadow.new
 shadow.operate
 shadow.shutdown
-# if you want a more sophisticated/more sustainably running shadow bot, cf. ssample-bot.rb
+# if you want a more sophisticated/more sustainably running 
+# shadow bot, cf. sample_chatbot.rb
