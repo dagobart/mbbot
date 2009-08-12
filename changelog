@@ -1,3 +1,22 @@
+== most notable improvements v0.2.2 to v0.2.3
+
++ added micro_blog_shadow.rb
+  * as by that now are not only chat but also shadow bots possible, renamed
+    sample-bot.rb to sample_chatbot.rb
+^ extended micro_blog_bot.rb a little, here and there, to make it easy for
+  micro_blog_shadow.rb to re-use functionality rather than [causing/keeping
+  the cause a need for] replicating such functionality
+  ^ added three optional parameters to initialize() which enable the
+    external caller to set the start-up message of the bot, and to
+    determine whether or not the bot should catch up with new/gone
+    followers, or whether any messages received since the previous
+    session [= the previous bot run] should be processed or not
+    (= message catchup skip)
+- removed the  +inbox_latest+ and +direct_latest+ paragraphs from
+  config/latest_tweeds.yaml, which were actually left-overs of an
+  old revision of sample-bot.rb/micro_blog_bot.rb
+
+
 == most notable improvements v0.2.1 to v0.2.2
 
 * improved message stream handling by merging in
