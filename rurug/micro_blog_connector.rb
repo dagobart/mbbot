@@ -25,6 +25,9 @@ else
 end
 USE_GEM_0_4_1 = USE_IDENTICA
 
+## RuRUG: How to implement the gem version switch more elegantly?
+## RuRUG: Is it possible to figure out the version of the loaded gem w/o using that USE_GEM_0_4_1 const?
+
 # '=0.4.1' for identi.ca support, '>0.4.1' for Twitter support
 #
 # If you want to, you could set +USE_GEM_0_4_1+ to +true+ even if

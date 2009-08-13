@@ -112,6 +112,7 @@ class MicroBlogMessagingIO
     return msg_ids
   end
 
+## RuRUG: apparently, here I'm missing something... but I don't see it. Add to hash? How to?
   def add_to_hash(hash, key, value)
     if (hash) then
       hash[key] = value
@@ -149,6 +150,7 @@ class MicroBlogMessagingIO
     return "@#{ username } #{ msg }"
   end
 
+## RuRUG: does exist some standard way to log stuff?
   def log(msg)
     puts "#{ Time.now }: #{ msg }"
   end # fixme: move method to some more appropriate class
@@ -188,6 +190,8 @@ class MicroBlogMessagingIO
           log("d #{ username } #{ msg }")
 
         @prev_outgoing_DM = msg
+
+## RuRUG: Is it clever to have the rescue here somewhere amidst everything? Or should it be better escalated?
       rescue Twitter::TwitterError => e
         puts "*** Twitter Error in sending a direct message to @#{ username }: " +
              e.message
@@ -360,6 +364,8 @@ class MicroBlogMessagingIO
   def process_timeline_messages(messages)
     processed_messages = []
 
+## RuRUG: Is there an easier way to extract stuff like this? Similar names in source and target?
+##        It's even been done twice, in similar ways, cf. next method below
       messages.each do |msg|
         processed_messages << {
 	  		         'created_at' => msg.created_at,

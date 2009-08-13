@@ -95,6 +95,7 @@ class MicroBlogBot
       end
     end
         
+## RuRUG: sinnvoll? sinnlos?
     unless USE_GEM_0_4_1 then
       @friending.catch_up_with_followers
     else     # in twitter gem v0.4.1 a Twitter::CantConnect may be raised,
