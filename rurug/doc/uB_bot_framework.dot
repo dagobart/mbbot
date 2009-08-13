@@ -1,0 +1,18 @@
+digraph uB_bot_framework {
+        rankdir=BT;
+
+	"twitter gem"      -> micro_blog_connector;
+        "yaml gem"         -> micro_blog_connector;
+         micro_blog_consts -> micro_blog_connector;
+
+	 micro_blog_connector -> micro_blog_friending;
+	 micro_blog_friending -> micro_blog_messaging_io;
+
+         micro_blog_connector    -> micro_blog_bot;
+         micro_blog_friending    -> micro_blog_bot;
+	 micro_blog_messaging_io -> micro_blog_bot;
+         Token                   -> micro_blog_bot
+
+         micro_blog_bot          -> micro_blog_shadow;
+         micro_blog_bot          -> sample_chatbot;
+}

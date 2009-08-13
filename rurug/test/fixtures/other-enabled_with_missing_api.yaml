@@ -1,0 +1,33 @@
+# this fixture currently is not in use
+account:
+  service: other
+
+
+twitter:
+  peer: dagobart    # testing needs a second user to bond with
+  user: twitterbot
+  password: 'non "secret" reading though still invalid password'
+
+identica:
+  peer: dagobart
+  user: identicabot
+  password: 'non "secret" reading though still invalid password'
+  use_alternative_api: 'identi.ca/api'
+
+other:
+  peer: logbot
+  user: otherbot
+  password: 'non "secret" reading though still invalid password'
+
+# use YAML::Store.load():
+#
+# yaml file contents:
+#
+#	 account:
+#	   user: twitterbot
+#	   password: secret
+#
+# irb(main):002:0> require 'yaml'
+# => true
+# irb(main):003:0> x = YAML::load( File.open( 'twitterbot.yaml' ) )
+# => {"account"=>{"password"=>"secret", "user"=>"twitterbot"}}

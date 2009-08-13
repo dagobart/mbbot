@@ -1,0 +1,9 @@
+# 14 sample tweet IDs as they appeared on Twitter, i.e. the sort order is not
+# manually made but given by Twitter:
+# 3203232261
+# 3203230178    3202827120
+# 3203177496    3202821667
+# 3203161937    3202820108    3202286801
+# 3202893076    3202546161    3202270208
+#               3202516689    3202268364
+#                             3202259068

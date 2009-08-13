@@ -1,0 +1,16 @@
+This set of libraries and one main program -- micro_blog_bot.rb -- aims at
+simplifying automated response systems ("bots") for popular micro-blogging
+services such as Twitter.com and Identi.ca.
+
+
+Common Twitter bots written in Ruby are often just that, a bot aimed at
+Twitter, not at any other compatible micro-blogging service. Also, those bots
+often do barely any more but build atop a single functionality and use that.
+Such as relaying RSS feeds to Twitter, i.e. to everyone who's following those
+bots.
+
+On the other hand, this here framework aims at providing developers with an
+easy to use, simple to customize framework for fully interactive chat bots
+delivering services to their bots' followers. This framework can be used with
+every alternative Twitter-compatible platform, such as Identica, right from
+the first version on that's to be checked in to Sourceforge.

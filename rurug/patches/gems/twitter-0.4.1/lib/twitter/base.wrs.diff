@@ -1,0 +1,19 @@
+--- base-orig.rb	2009-02-08 17:32:36.000000000 +0100
++++ base.rb	2009-02-08 19:24:52.000000000 +0100
+@@ -61,7 +61,7 @@ module Twitter
+     
+     # Destroys a status by id
+     def destroy(id)
+-      call("destroy/#{id}")
++      call("destroy/#{id}", :method => :post)
+     end
+     
+     def rate_limit_status
+@@ -162,6 +162,7 @@ module Twitter
+       form_data = {'status' => status}
+       form_data.merge!({'source' => options[:source]}) if options[:source]
+       form_data.merge!({'in_reply_to_status_id' => options[:in_reply_to_status_id]}) if options[:in_reply_to_status_id]
++      form_data.merge!({'in_reply_to_user_id' => options[:in_reply_to_user_id]}) if options[:in_reply_to_user_id]
+       Status.new_from_xml(request('statuses/update.xml', :auth => true, :method => :post, :form_data => form_data))
+     end
+     alias :update :post
