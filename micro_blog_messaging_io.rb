@@ -45,6 +45,8 @@ class MicroBlogMessagingIO
 
     @latest_messages =    # fixme: rename ..._TWEED_... to ..._TWEET_...
       YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
+    finish_initialization_of_latest_messages
+
     self.skip_catchup if skip_catchup
     # puts @latest_messages.inspect; exit
   end
@@ -52,6 +54,17 @@ class MicroBlogMessagingIO
   #        file) for the service the bot currently is assigned to, we should
   #        issue an initialization of all missing values to the now current
   #        message ID, just like with skip_catchup()
+
+  # make latest messages fully initialized so won't be able to accidentally
+  # try to access a not existing key
+  def finish_initialization_of_latest_messages
+    [:incoming_DMs,                    # fixme: make this array part of the
+     :own_timeline, :friends_timeline, #        consts file
+     :mentions, :replies,
+     :public_timeline].each do |msg_type|
+      @latest_messages[msg_type.to_s] ||= {}
+    end
+  end
 
   # +@connection.timeline+ doesn't exist for twitter gem > v0.6.12, therefore
   # we add a timeline() method of our own
@@ -113,31 +126,21 @@ class MicroBlogMessagingIO
   end
 
   def add_to_hash(hash, key, value)
-    if (hash) then
-      hash[key] = value
-    else
-      hash = { key => value }
-    end
-
-    return hash
-  end
+    ( hash || {} ).merge({ key => value })
+  end # not tested; not in use either
 
   def skip_catchup
-    @latest_messages[:incoming_DMs.to_s] = 
-      add_to_hash(@latest_messages[:incoming_DMs.to_s], 
-                  @connector.service_in_use, 
-                  now_current_message_id(:incoming_DMs)
-                 )
+    service_in_use = @connector.service_in_use
 
     now_current_public_message_id = now_current_message_id(:public_timeline)
-
     [:public_timeline,
      :mentions, :replies,
      :own_timeline, :friends_timeline].each do |msg_type|
-      @latest_messages[msg_type.to_s] = 
-        add_to_hash(@latest_messages[msg_type.to_s], 
-                    @connector.service_in_use, now_current_public_message_id)
+      @latest_messages[msg_type.to_s][service_in_use] = now_current_public_message_id
     end
+
+    @latest_messages[:incoming_DMs.to_s][service_in_use] =
+                                                now_current_message_id(:incoming_DMs)
     # puts @latest_messages.pretty_inspect; exit
   end # fixme: add tests
 
@@ -189,9 +192,9 @@ class MicroBlogMessagingIO
 
         @prev_outgoing_DM = msg
       rescue Twitter::TwitterError => e
-        puts "*** Twitter Error in sending a direct message to @#{ username }: " +
-             e.message
-        puts "    attempting regular reply"
+        log "*** Twitter Error in sending a direct message to @#{ username }: " +
+                 e.message
+        log "    attempting regular reply"
         say(public_version_of_message)
       end
     end
@@ -358,24 +361,20 @@ class MicroBlogMessagingIO
   # processing both methods return a stream of messages which feature
   # the same hash keys (read: the same structure).
   def process_timeline_messages(messages)
-    processed_messages = []
-
-      messages.each do |msg|
-        processed_messages << {
-	  		         'created_at' => msg.created_at,
-				         'id' => msg.id.to_i,
-			        'screen_name' => msg.user.screen_name,
-				       'text' => msg.text,
-				    'user_id' => msg.user.id
-	  		    }
-        # fixme: should add the type of message to the hash, so in later
-        #        steps of processing it still will be possible to
-        #        determine what kind of message it originally was, e.g.
-        #        to see whether it was a private direct message or
-        #        a public post
-      end
-
-    processed_messages
+    messages.map do |msg|                     # map instead of each: implicitly
+      {                                       #  collects the 'loop's' result to
+         'created_at' => msg.created_at,      #  an array and returns that array
+                 'id' => msg.id.to_i,         #  finally
+        'screen_name' => msg.user.screen_name,
+               'text' => msg.text,
+            'user_id' => msg.user.id
+      }
+      # fixme: should add the type of message to the hash, so in later
+      #        steps of processing it still will be possible to
+      #        determine what kind of message it originally was, e.g.
+      #        to see whether it was a private direct message or
+      #        a public post
+    end
   end # fixme: ^ replace string hash keys by symbol hash keys
       # fixme: + add tests
 
@@ -388,24 +387,20 @@ class MicroBlogMessagingIO
   # processing both methods return a stream of messages which feature
   # the same hash keys (read: the same structure).
   def process_private_messages(messages)
-    processed_messages = []
-
-      messages.each do |msg|
-        processed_messages << {
-	  		         'created_at' => msg.created_at,
-				         'id' => msg.id.to_i,
-			        'screen_name' => msg.sender_screen_name,
-				       'text' => msg.text,
-				    'user_id' => msg.sender_id
-	  		       }
-        # fixme: should add the type of message to the hash, so in later
-        #        steps of processing it still will be possible to
-        #        determine what kind of message it originally was, e.g.
-        #        to see whether it was a private direct message or
-        #        a public post
-      end
-
-    processed_messages
+    messages.map do |msg|
+      {
+         'created_at' => msg.created_at,
+	         'id' => msg.id.to_i,
+        'screen_name' => msg.sender_screen_name,
+	       'text' => msg.text,
+	    'user_id' => msg.sender_id
+      }
+      # fixme: should add the type of message to the hash, so in later
+      #        steps of processing it still will be possible to
+      #        determine what kind of message it originally was, e.g.
+      #        to see whether it was a private direct message or
+      #        a public post
+    end
   end # fixme: ^ replace string hash keys by symbol hash keys
       # fixme: + add tests
 

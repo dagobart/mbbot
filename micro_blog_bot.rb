@@ -55,8 +55,12 @@ class MicroBlogBot
                                  ' (That one\'s *not* by @dagobart.)',
     		      'sv' => "@#{@supervisor} is my supervisor.",
     		    } # note: all hash keys must be lower case
+                    # fixme: could we move the hash to a yaml, so it'd
+                    #        become morecomfortably to extend?
 
     puts @friending.follower_stats
+
+    return self
   end
 
   def handle_help_command(predicate,msg)
@@ -93,6 +97,7 @@ class MicroBlogBot
                       " help' for help. You can DM me too! Note: I'm not" +
                       " always online."
 
+    # welcome new followers:
     @friending.new_followers.each do |new_follower|
       DBM.open('followerwelcomes') do  |db| 
         if ((!db[new_follower]) || (db[new_follower].length == 0)) then
@@ -102,33 +107,30 @@ class MicroBlogBot
         end
       end
     end
-        
-    unless USE_GEM_0_4_1 then
-      @friending.catch_up_with_followers
-    else     # in twitter gem v0.4.1 a Twitter::CantConnect may be raised,
-      begin  #  therefore handle it:
-        @friending.catch_up_with_followers
-      rescue Twitter::CantConnect
-        puts @connector.errmsg(Twitter::CantConnect)
-      end
-    end
+
+    # actually 'befriend' the new followers:
+    @friending.catch_up_with_followers
   end # FIXME: + add test
-      # fixme: maybe this would be better put into the connector, with an
-      #        optional welcome string
+      # fixme: maybe this would be better put into the friending class, with
+      #        an optional welcome string
+      # FIXME: wait.. did dsifry add friending functionality here in the
+      #        bot itself? Would be the wrong class for such.
 
   # +waittime+: Twitter suggests 60s: http://is.gd/j15G -- 15s gets us
   #             blacklisted on Twitter
   def operate(waittime = 75)
-    progress_message = nil
-    # progress_message = 'Just learned how to ...'
-    # @talk.destroy(@talk.say('test').id)
-    if progress_message
-      msg = @talk.say(progress_message)
-      puts msg.id # so we could delete it manually any later
-    end
-
+#    progress_message = nil
+#    # progress_message = 'Just learned how to ...'
+#    # @talk.destroy(@talk.say('test').id)
+#    if progress_message then
+#      msg = @talk.say(progress_message)
+#      puts msg.id # so we could delete it manually any later
+#    end
+#
     while (!@shutdown) do
       catch_up_with_followers if @perform_followers_catch_up
+        # fixme: figure out why we have such a damn long pause past here
+
       process_latest_received
       @talk.persist
       unless @shutdown
@@ -161,7 +163,6 @@ class MicroBlogBot
       end
     end
   end
-  # Twitter::CantConnect happens if a shutdown gets processed before all the received messages got processed; => FIXME: remove Twitter::CantConnect rescues from thorough the code
 
   # . Uses ~Twitter message threading, i.e. refers to the message ID we're
   #   responding to.

@@ -18,6 +18,9 @@ require (main_dir + 'micro_blog_bot')
 #
 # Suggestions? Please let me know.
 
+class ShutdownException < StandardError # why +< StandardError+? -- Random choice
+end
+
 class MicroBlogShadow < MicroBlogBot
   def initialize
     super("To shut down the bot, the user who's sharing their account with the\n" +
@@ -25,7 +28,7 @@ class MicroBlogShadow < MicroBlogBot
           "Alternatively, just interrupt it using C-C/^C or other means", false, true)
 
     # void some variables initialized by super class:
-    @bot_commands = { '' => '' }
+    @bot_commands = { }
     @supervisor = ''
   end
 
@@ -33,24 +36,32 @@ class MicroBlogShadow < MicroBlogBot
     msgs = @talk.get_latest_posts(false)
     # Set +false+ to avoid to     ^^^^^  accidentally
     # persist the ID of any not yet examined message.
- 
-    latest_sucessfully_examined = nil
+
+    begin
 
       msgs.each do |msg|
-        unless @shutdown then
-          grasp_shutdown(msg)
-      
-          latest_sucessfully_examined = msg
-        end
+        grasp_shutdown(msg)
+        # As of 20090814, grasp_shutdown() does only basic boolean, string
+        # and hash operations, so no chance that it'd raise an exception.
+        # Therefore, below we need to deal with our own ShutdownException
+        # at all.
+
+        # msg is the latest successfully examined message. We need to
+        # store it to persist it to the latest messages yaml file later.
+        # As our scope currently is the +each+, we need to find a way
+        # to get the +msg+ to outside of that scope. We achieve that by
+        # raising an exception and 'ab'using the message parameter of
+        # the exception for storing the [non-string] +msg+ there. Later,
+        # once we ask the exception for the value of its 'message', we
+        # will get back the +msg+ we just stored there:
+        raise ShutdownException.new(msg) if @shutdown
       end
 
-    # Make sure we don't persist a message's ID unless we actually
-    # examined it:
-    if (latest_sucessfully_examined) then
-      @talk.latest_post = 
-        @talk.processed_message_id(latest_sucessfully_examined) # + 1
+    rescue ShutdownException => exception
+      @talk.latest_post = @talk.processed_message_id(exception.message)
     end
   end # fixme: + destroy message if it was a bot command
+  # FIXME: port this method to micro_blog_bot.rb
 
   def grasp_shutdown(msg)
     screen_name = msg['screen_name']

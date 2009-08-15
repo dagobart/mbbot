@@ -44,10 +44,15 @@ class MicroBlogFriending
           db[follower_screen_name] = DateTime.now.to_s
 
           puts message
+          # fixme: make use of log(), here, once it's available to
+          #        low-level classes, like this one here, too
+
           begin
             follow(follower_screen_name)
           rescue Twitter::TwitterError => e
             puts "We couldn't follow #{follower_screen_name}: #{e.message}"
+            # fixme: make use of log(), here, once it's available to
+            #        low-level classes, like this one here, too
           end
         end
       end
@@ -62,6 +67,10 @@ class MicroBlogFriending
             (db[follower_screen_name].length == 0)) then
           db[follower_screen_name] = nil
           puts message
+          # fixme: make use of log(), here, once it's available to
+          #        low-level classes, like this one here, too
+          # fixme: just like in catch_up_with_followers(), make use
+          #        of rescue, here too
           leave(follower_screen_name)
         end
       end

@@ -2,6 +2,16 @@ require 'rubygems'
 require 'yaml'
 require File.join(File.dirname(__FILE__), 'micro_blog_consts')
 
+## fixme: someone proposed to use the folloing instead of the above:
+# require 'pathname'
+# $root = Pathname.new(__FILE__).dirname
+#
+# require $root.join('micro_blog_consts').to_s
+## could be well-placed in the global consts file; but then it'd
+## need to be changed into some not-consts-only initialization file,
+## and _then_ it would make sense to ponder to get the globals to where 
+## they might fit better -- into classes/objects
+
 # Unfortunately, the twitter gem supports identi.ca only prior to v0.5.0,
 # therefore we need to use the old gem in case we want our bot to work on
 # identi.ca too. Identi.ca support is tested only for v0.4.1 therefore we
@@ -33,6 +43,7 @@ USE_GEM_0_4_1 = USE_IDENTICA
 gem('twitter', USE_GEM_0_4_1 ? '=0.4.1' : '>0.4.1')
 
 require 'twitter'
+# fixme: move the gem selection into a method. According to rurug, that'll work.
 
 
 # This piece of software is released under the
@@ -84,14 +95,8 @@ class MicroBlogConnector
           # expected params.
         end
 
-        begin
-          @connection = Twitter::Base.new(@username, @password, 
-                                          :api_host => @use_alternative_api)
-          rescue Twitter::CantConnect
-           raise Twitter::CantConnect,
-                 "#{config_file}: Failed to connect to micro-blogging" +
-                                " service provider '#{@service_in_use}'."
-        end
+        @connection = Twitter::Base.new(@username, @password, 
+                                        :api_host => @use_alternative_api)
 
       # end-if use_alternative_api?
 
@@ -100,6 +105,9 @@ class MicroBlogConnector
           @connection = Twitter::Base.new(@username, @password)
         else
           @auth = Twitter::HTTPAuth.new(@username, @password)
+          # fixme:
+          # dsifry added that @auth property; can we benefit from having it around? 
+          # Is it used anywhere at all? Or why is it an obj instance variable then?
           @connection = Twitter::Base.new(@auth)
         end
       end
