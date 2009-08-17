@@ -29,13 +29,13 @@ class MicroBlogShadow < MicroBlogBot
     @bot_commands = { }
   end
 
+  # the former grasp_shutdown() now takes place implicitly by 
+  # MicroBlogBot's improved shutdown detection
   def act_upon_message(msg)
     screen_name = msg['screen_name']
        msg_text = msg['text'];
       timestamp = msg['created_at']; timestamp.gsub!(/ \+0000/, '')
 
-    text = msg_text.strip.downcase
- 
     @talk.log "received '#{msg_text}' by @#{screen_name} at #{timestamp}"
   end # FIXME: remove hard-coded strings
       # FIXME: 20090729: on identi.ca, msg deletion apparently doesn't

@@ -1,3 +1,29 @@
+== most notable improvements v0.2.3 to v0.2.4
+
+^ simplified creating new bots to the extend that only two methods of a
+  +MicroBlogBot+ derived bot are needed to be overwritten: initialize() and
+  act_upon_message()
+^ removed the need to handle the shutdown detection within a derived bot
+
+^ generalized MicroBlogBot.process_latest_received() to deal with any kind of
+  message stream now rather than only with [inbound] replies or DMs only
++ added MicroBlogBotRunner which takes most of the former sample_chatbot.rb
+  and provides its sophisticated exception handling to any bot now
+
+* interface of MicroBlogBot.initialize() now has 5 parameters
++ added initialize_waittime() which eases to select a reasonable +waittime+
+  for the service the bot gets connected to
++ added Twitter::CantConnect error handling
+^ removed [spelling-error-/mismatch-prone] strings from exception handling
+
+^ removed lots of innecessary rescue differentiations between twitter gem
+  v0.4.1 and v0.6.12: issues that happen there, now may raise exceptions.
+  +MicroBlogBotRunner+ does handle those exception.
+^ improved lots of methods
+^ simplified using the framework even more
+^ made micro_blog_shadow.rb run again
+
+
 == most notable improvements v0.2.2 to v0.2.3
 
 + added micro_blog_shadow.rb

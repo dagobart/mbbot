@@ -8,12 +8,12 @@ friends_timeline:
 public_timeline: 
   identica: 8259695
   twitter: 3230236621
-own_timeline: 
-  identica: 8259821
-  twitter: 3230236621
 incoming_DMs: 
   identica: 18325
   twitter: 290005403
+own_timeline: 
+  identica: 8259821
+  twitter: 3230236621
 replies: 
   identica: 8259695
   twitter: 3234314932

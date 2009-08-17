@@ -5,6 +5,61 @@ simplifying automated response systems ("bots") for popular micro-blogging
 services such as Twitter.com and Identi.ca.
 
 
+== How to make your own bot
+After you have set up the framework, it is just as easy as shown below to
+make your own micro-blogging bot. However, in order to make them run you 
+need to set up the framework first. See sections +Setup+ and +Bot account
+data+ below.
+
+=== Sample chat bot with default functionality:
+ require (File.join(File.dirname(__FILE__), '') + 'micro_blog_bot_runner')
+
+ class SampleBot < MicroBlogBot
+   # for a sample chatbot no changes are needed
+ end
+
+ MicroBlogBotRunner.new(SampleBot.new).run
+
+This is actual code taken from +sample_chatbot.rb+.
+
+=== Sample shadow bot 
+A starting point for building a user output augmenting bot or a gateway.
+
+ require (File.join(File.dirname(__FILE__), '') + 'micro_blog_bot_runner')
+
+ class MicroBlogShadow < MicroBlogBot
+   def act_upon_message(msg)
+     screen_name = msg['screen_name']
+        msg_text = msg['text'];
+       timestamp = msg['created_at']; timestamp.gsub!(/ \+0000/, '')
+ 
+     @talk.log "received '#{msg_text}' by @#{screen_name} at #{timestamp}"
+   end
+ end
+
+ MicroBlogBotRunner.new(MicroBlogShadow.new).run
+
+=== Launch & Shutdown of the sample bots
+Copy above sample code to a text file or just take the pre-packed 
++sample_chat.rb+ and run it from the command line:
+
+	$ ruby sample_chatbot.rb
+
+Once launched, you can interact with the bot through the micro-blogging
+service chosen. For example, try
+
+	@yourbotname help
+
+assuming your bot's micro-blogging service's account nick name is
++yourbotname+.
+
+To shut down, give
+
+	@yourbotname shutdown
+
+through the service.
+
+
 == Setup
 
 After I ran the n-th times into trouble with RubyGems and some updated
@@ -198,28 +253,6 @@ supervisor fields, and the +use_alternative_api+ field. Finally, set
 In any of the credentials files mentioned above, you are free to delete the
 blocks you don't need. Essential are only the +account+ block and that
 service block the +account+ block+ refers to.
-
-
-== Get a first impression Launch & Shutdown
-
-Once you're done with configuring your +my-bot.yaml+ file, you'ready to launch
-the bot. To do so, call micro_blog_bot.rb this way:
-
-	$ ruby sample-bot.rb
-
-Once launched, you can interact with the bot through the micro-blogging
-service chosen. For example, try
-
-	@yourbotname help
-
-assuming your bot's micro-blogging service's account nick name is
-+yourbotname+.
-
-To shut down, give
-
-	@yourbotname shutdown
-
-through the service.
 
 
 == Dealing with down times of a service
