@@ -158,9 +158,12 @@ class MicroBlogBot
       begin
 
         msgs.each do |msg|
+          # update @shutdown:
+          determine_shutdown(msg)
+          
           act_upon_message(msg)
           # act_upon_message() should not raise any unhandled exceptions
-          # that would disrupt our message ID persisting. As of 20090817,
+          # which would disrupt our message ID persisting. As of 20090817,
           # the current implementation of act_upon_message() complies to
           # this requirement.
 
@@ -195,8 +198,15 @@ class MicroBlogBot
   def jot_down_latest_processed_message(type, latest_processed_msg)
     @talk.set_latest_message_id(type,
                                 @talk.processed_message_id(latest_processed_msg))
-    # "+ 1" to move one past the latest message processed, so none will get reprocessed
   end
+
+  def determine_shutdown(msg)
+    screen_name = msg['screen_name']
+    text        = msg['text'].sub(/^@#{@bot_name}\s+/, '')
+
+    @shutdown ||= ((text == 'shutdown') && (screen_name == @supervisor))
+  end # FIXME: remove hard-coded strings incl. hard-coded 'shutdown'
+      #         command
 
   # for derived classes, to ease to replace the default message processing,
   # act_upon_message() is the place.
@@ -224,11 +234,6 @@ class MicroBlogBot
       timestamp = msg['created_at']; timestamp.gsub!(/ \+0000/, '')
            text = msg['text'];       text.sub!(/^@#{@bot_name}\s+/, '')
 
-    	@shutdown ||= (
-                              (text == 'shutdown') && 
-                       (screen_name == @connector.supervisor)
-                      )
-
     if @shutdown then
       answer = "Shutting down, master. // @#{ @bot_name } is @#{ @connector.supervisor }'s #chat #bot based on @dagobart's #LGPL3 #Twitter (/Identica) chatbot framework." # fixme: remove hard-coded string
     else
@@ -251,7 +256,9 @@ class MicroBlogBot
     # fixme: re-enable post/reply threading by handing over +msg_id+,
     #        and using reply() rather than say() if direct message
     #        sending is not available/not possible
-  end # fixme: + make it an option to answer publicly/privately
+  end  # FIXME: remove hard-coded strings incl. hard-coded 'shutdown'
+       #         command
+       # fixme: + make it an option to answer publicly/privately
 
   # actually, I didn't grasp Ruby finalizing. If you do, feel free to
   # implement a better solution than this need to call shutdown explicitly
@@ -270,7 +277,7 @@ end
 # bot.operate
 # bot.shutdown
 #
-# for a more advanced one, extend sample-bot.rb
+# for a more advanced one, extend sample_chatbot.rb
 
 
 # todo:
