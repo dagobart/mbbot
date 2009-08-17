@@ -16,10 +16,16 @@ require 'dbm'
 #
 # Suggestions? Please let me know.
 
+class ShutdownException < StandardError # why +< StandardError+? -- Random choice
+end
+
 class MicroBlogBot
+  # +message_streams_to_look_at+: array of kinds of messages the bot shall 
+  # examine/process
   def initialize(alternative_shutdown_info_message = '', 
                  perform_followers_catch_up        = true, 
-                 skip_unprocessed_messages         = false)
+                 skip_unprocessed_messages         = false,
+                 message_streams_to_look_at        = [:replies, :incoming_DMs])
     @connector =
          MicroBlogConnector.new( VALID_CONNECT_CREDENTIALS__DO_NOT_CHECK_IN )
     @friending = MicroBlogFriending.new(@connector)
@@ -30,6 +36,7 @@ class MicroBlogBot
     @supervisor = @connector.supervisor
 
     @perform_followers_catch_up = perform_followers_catch_up
+    @message_streams_to_look_at = message_streams_to_look_at
 
     @shutdown = false
     if alternative_shutdown_info_message.empty? then
@@ -134,35 +141,71 @@ class MicroBlogBot
       process_latest_received
       @talk.persist
       unless @shutdown
-        @talk.log "[status] sleeping for #{waittime} seconds...\n \b"
+        @talk.log "[status] sleeping for #{ waittime } seconds...\n \b"
         sleep waittime
       end
     end
   end
 
   def process_latest_received
-    [:replies, :incoming_DMs].each do |type|
-      latest_sucessfully_answered = nil
+    @message_streams_to_look_at.each do |type|
+      latest_processed_msg = nil
 
-        @talk.get_latest_messages(false, type).each do |msg|
-          unless @shutdown then  #^^^^^ false to avoid to accidentally persist
-            answer_message(msg)  # the ID of any not yet answered message
+      msgs = @talk.get_latest_messages(false, type)
+      # false to avoid to accidentally ^^^^^ persist the ID of any not yet
+      # answered message
 
-            # won't be set on//if:
-            #  either @shutdown==true
-            #  or answer_message() raising an exception
-            latest_sucessfully_answered = msg
-          end
+      begin
+
+        msgs.each do |msg|
+          act_upon_message(msg)
+          # act_upon_message() should not raise any unhandled exceptions
+          # that would disrupt our message ID persisting. As of 20090817,
+          # the current implementation of act_upon_message() complies to
+          # this requirement.
+
+          latest_processed_msg = msg
+
+          # To leave the each graciously on an issued 'shutdown' command,
+          # we introduce a ShutdownException. By raising it, our jotting
+          # down of the latest successfully processed message would fail.
+          # Therefore we have to handle the down-jotting within the rescue.
+          # To get the latest processed message there, we 'ab'use the
+          # message parameter of the exception for storing the [non-string]
+          # +msg+ there. Later, once we ask the exception for the value of
+          # its 'message', we will get back the +msg+ we just stored there:
+          raise ShutdownException.new(msg) if @shutdown
         end
 
-      # Make sure we don't persist a message's ID unless we actually 
-      # answered it:
-      if (latest_sucessfully_answered) then
-        @talk.set_latest_message_id(type,
-           @talk.processed_message_id(latest_sucessfully_answered)) # + 1
+        # Make sure we persist every message's ID we actually processed.
+        # Either we'll have a ShutdownException, then the ID will be
+        # stored by means of the rescue or we won't have an exception,
+        # then the following +if+ conditional will get executed, and
+        # thus the ID stored though.
+        if latest_processed_msg then
+          jot_down_latest_processed_message(type, latest_processed_msg)
+        end
+
+      rescue ShutdownException => exception
+        jot_down_latest_processed_message(type, exception.message)
       end
     end
   end
+  
+  def jot_down_latest_processed_message(type, latest_processed_msg)
+    @talk.set_latest_message_id(type,
+                                @talk.processed_message_id(latest_processed_msg))
+    # "+ 1" to move one past the latest message processed, so none will get reprocessed
+  end
+
+  # for derived classes, to ease to replace the default message processing,
+  # act_upon_message() is the place.
+  # +msg+: latest received message of any of @message_streams_to_look_at
+  # as set during object creation
+  def act_upon_message(msg)
+    answer_message(msg)
+  end
+  #fixme: abstract away who's allowed to shutdown, too
 
   # . Uses ~Twitter message threading, i.e. refers to the message ID we're
   #   responding to.
@@ -214,7 +257,7 @@ class MicroBlogBot
   # implement a better solution than this need to call shutdown explicitly
   # each time.
   def shutdown
-    @talk.log 'shutting down...' if @shutdown
+    @talk.log 'shutting down...'
     @talk.shutdown
   end
 end

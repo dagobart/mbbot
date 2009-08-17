@@ -12,3 +12,6 @@ MicroBlogBotRunner.new(SampleBot.new).run
 
 # you could even overwrite parts of
 # MicroBlogBotRunner if you'd like
+
+
+# for another example of a (non-chat) bot, see micro_blog_shadow.rb
