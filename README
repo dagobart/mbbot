@@ -282,6 +282,7 @@ against Twitter too.
 
 
 = Benefits
+
 * The bot is optimized for running permanently.
 * Simple command and answer bots can be done in a matter of minutes, just by
   modifying the +@commands+ hash of +MicroBlogBot+.
@@ -297,6 +298,7 @@ against Twitter too.
   modifications are going to break anything, you will know quickly.
   . Because of major improvements, as of Aug 11, 2009 the tests are 
     incomplete now.
+
 
 = Known shortcomings
 
@@ -315,21 +317,24 @@ against Twitter too.
   tidying up.
 
 
+= Contribute to the MicroBlogBot framework
+
+The code is full of FIXMEs and the most of the tests are out of date. I'd
+be delighted if you'd go over the code and fixed some FIXMEs or updated
+some of the tests.
+
+Also, if you'd like to contribute some code of your own feel free to do
+so. Also, adding documentation to de code would be greatly appreciated. 
+
+Especially grateful I'd be if you'd roll the bot framework files to a
+gem.
+
+
+Looking forward to hear from you. Just send an e-mail.
+
+
 = Authors
 
 This micro-blogging chat bot mini-framework was developed in January/February 
 and July/August 2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com> aka 
 @dagobart aka A.F. Contributions were added by David Sifry in August 2009.
-
-
-= Contribute to the MicroBlogBot framework
-
-I'd be glad, if you'd contribute some code of your own to this here project
-or if you could fix some of the things I left open to be fixed later or if
-you would add some documentation to the framework. Or if you'd help to roll
-the files to a gem.
-
-However, I'd be glad to see just any contribution of yours to this here
-project.
-
-Looking forward to hear from you. Just send a mail.
