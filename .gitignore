@@ -1,0 +1,6 @@
+config/credentials/my-*.yaml
+followbacks.dir
+followbacks.pag
+followerwelcomes.dir
+followerwelcomes.pag
+*~
