@@ -111,7 +111,7 @@ class MicroBlogMessagingIO
               # twitter.com as they replaced replies by mentions.
 
     return messages_stream.first.id.to_i
-  end
+  end      # ^^^ sometimes (?) returns "warning: Object#id will be deprecated; use Object#object_id"
 
   def now_current_message_ids
     message_types = @message_type__message_stream_type.keys +
