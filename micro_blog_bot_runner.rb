@@ -87,7 +87,12 @@ private
   def handle_error(err)
     log("[error] #{ @err_msgs[err] }" +
         " Sleeping and resetting.\nError: #{ err.message }\n")
-    sleep 60
-  end
+    if err == Twitter::RateLimitExceeded then
+      log('       performing a heavy delay to deal with the exceeded limit')
+      sleep 900 # do a heavy delay when Twitter::RateLimitExceeded
+    else
+      sleep 60
+    end
+end
 end
 # fixme: could this class be integrated with MicroBlogBot? Would it make sense?
