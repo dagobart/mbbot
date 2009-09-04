@@ -443,6 +443,10 @@ class MicroBlogMessagingIO
                           type = :mentions)
     msgs = []
     latest_message_id = @latest_messages[type.to_s][@connector.service_in_use]
+
+    # FIXME: next instruction causes a whole lot of GETs, which in turn makes
+    #        us run into the Twitter traffic limit. --> reduce number of GETs
+    #        performed
     message_ids_current_prior_to_catching_up = self.now_current_message_ids
 
       message_stream_type = @message_type__message_stream_type[type]
