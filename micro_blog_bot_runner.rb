@@ -94,6 +94,6 @@ private
     else
       sleep 60
     end
-end
+  end
 end
 # fixme: could this class be integrated with MicroBlogBot? Would it make sense?

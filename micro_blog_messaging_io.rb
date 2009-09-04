@@ -43,6 +43,13 @@ class MicroBlogMessagingIO
     @prev_outgoing_DM   = ''
     @prev_outgoing_post = ''
 
+    # fixme:
+    # since by ow we're using a dbm file anyways, why keep persistig the
+    # latest messages IDs in that yaml fileat all?
+    # when channging this, add an update script that takes the yaml file IDs
+    # and puts them into the dbm
+    # also, add an install script. That could perform the necessary patching
+    # the scripts could be performed as a rake task
     @latest_messages =    # fixme: rename ..._TWEED_... to ..._TWEET_...
       YAML::load( File.open( LATEST_TWEED_ID_PERSISTENCY_FILE ) )
     finish_initialization_of_latest_messages
@@ -443,6 +450,10 @@ class MicroBlogMessagingIO
                           type = :mentions)
     msgs = []
     latest_message_id = @latest_messages[type.to_s][@connector.service_in_use]
+
+    # FIXME: next instruction causes a whole lot of GETs, which in turn makes
+    #        us run into the Twitter traffic limit. --> reduce number of GETs
+    #        performed
     message_ids_current_prior_to_catching_up = self.now_current_message_ids
 
       message_stream_type = @message_type__message_stream_type[type]
