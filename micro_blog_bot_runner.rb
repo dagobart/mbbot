@@ -87,8 +87,9 @@ private
   def handle_error(err)
     log("[error] #{ @err_msgs[err] }" +
         " Sleeping and resetting.\nError: #{ err.message }\n")
-    if err == Twitter::RateLimitExceeded then
-      log('       performing a heavy delay to deal with the exceeded limit')
+    if (!USE_GEM_0_4_1 && (err == Twitter::CantConnect))       ||
+       ( USE_GEM_0_4_1 && (err == Twitter::RateLimitExceeded)) then
+      log('       Performing a heavy 900s delay to deal with exceeded limit')
       sleep 900 # do a heavy delay when Twitter::RateLimitExceeded
     else
       sleep 60
