@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 main_dir = File.join(File.dirname(__FILE__), '')
 require (main_dir + 'micro_blog_connector')
 require (main_dir + 'micro_blog_friending')
@@ -91,14 +92,26 @@ class MicroBlogBot
   end
 
   def say_hello
-    if USE_GEM_0_4_1 then
-      @talk.say('Starting up. Running on the old gem, unable to send DMs. Will send everything in public.')
-    else
-      @talk.say('Starting up.')
-    end
+    msg  = 'Starting up.'
+    msg += ' Running on the old gem, unable to send DMs.' +
+           ' Will send everything in public.'             if USE_GEM_0_4_1
+    @talk.say(msg)
   end
 
   # be nice to new followers
+  #
+  # 
+  # FIXME: currently, to figure out the new followers, we make a delta of
+  # accounts/people we follow and those following us. That costs us two
+  # Twitter GETs. Until now, the catch up took place every time we polled
+  # for new messages. Which in turn quickly makes us hit the Twitter Rate
+  # Limit.
+  #
+  # To fix this, catching up should be run not every time we look for new
+  # incoming messages but independently of that, far more rarely.
+  #
+  # Also, the delta calculation causes lots of traffic. Did the µB service
+  # come up with an easier way in the meantime yet?
   def catch_up_with_followers
     welcome_message = "Welcome! Thanks for the follow! Send '@#{@bot_name}" +
                       " help' for help. You can DM me too! Note: I'm not" +
@@ -135,8 +148,10 @@ class MicroBlogBot
 #    end
 #
     while (!@shutdown) do
-      catch_up_with_followers if @perform_followers_catch_up
-        # fixme: figure out why we have such a damn long pause past here
+      #catch_up_with_followers if @perform_followers_catch_up
+      #  # fixme: figure out why we have such a damn long pause past here
+      #
+      # FIXME: do the catchup more rarely -- catching up generates a lot of traffic
 
       process_latest_received
       @talk.persist
