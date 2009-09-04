@@ -24,7 +24,7 @@ class MicroBlogBotRunner
       end
 
         # main bot run loop:
-        @bot.operate(@waittime)
+        @bot.operate(@waittime, true)
 
     rescue @handable_errors => e
       handle_error(e); retry

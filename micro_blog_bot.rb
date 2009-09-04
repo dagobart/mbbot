@@ -138,7 +138,7 @@ class MicroBlogBot
 
   # +waittime+: Twitter suggests 60s: http://is.gd/j15G -- 15s gets us
   #             blacklisted on Twitter
-  def operate(waittime = 75)
+  def operate(waittime = 75, dynamically_adapt_polling_frequency = false)
 #    progress_message = nil
 #    # progress_message = 'Just learned how to ...'
 #    # @talk.destroy(@talk.say('test').id)
@@ -147,13 +147,21 @@ class MicroBlogBot
 #      puts msg.id # so we could delete it manually any later
 #    end
 #
+
+    min_waittime = waittime if dynamically_adapt_polling_frequency
     while (!@shutdown) do
       #catch_up_with_followers if @perform_followers_catch_up
       #  # fixme: figure out why we have such a damn long pause past here
       #
-      # FIXME: do the catchup more rarely -- catching up generates a lot of traffic
+      # FIXME: do the catchup more rarely -- catching up costs a lot of traffic
 
       process_latest_received
+      if dynamically_adapt_polling_frequency && messages_processed? then
+        waittime = [(waittime + 1) / 2, min_waittime].max
+      else
+        waittime = [waittime * 3 / 2, 300].min # fixme: remove hard-coded 300s
+      end                                      #      + hard-coded stepping too
+
       @talk.persist
       unless @shutdown
         @talk.log "[status] sleeping for #{ waittime } seconds...\n \b"
@@ -169,6 +177,10 @@ class MicroBlogBot
       msgs = @talk.get_latest_messages(false, type)
       # false to avoid to accidentally ^^^^^ persist the ID of any not yet
       # answered message
+
+      # to enable a operate() caller to dynamically adapt their
+      # polling frequency:
+      @messages_processed = msgs.size > 0
 
       begin
 
@@ -209,7 +221,11 @@ class MicroBlogBot
       end
     end
   end
-  
+
+  def messages_processed?
+    @messages_processed
+  end
+
   def jot_down_latest_processed_message(type, latest_processed_msg)
     @talk.set_latest_message_id(type,
                                 @talk.processed_message_id(latest_processed_msg))
@@ -280,7 +296,11 @@ class MicroBlogBot
   # each time.
   def shutdown
     @talk.log 'shutting down...'
-    @talk.shutdown
+    @talk.shutdown 
+    # fixme: store the ids of the latest processed msgs as a reply to the
+    # bot, so every other instance of the bot can pick up that status and
+    # start from there rather than reprocessing all the messages yet
+    # processed by other instances of the bot. 
   end
 end
 

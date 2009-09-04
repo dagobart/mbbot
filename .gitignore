@@ -5,3 +5,5 @@ followerwelcomes.dir
 followerwelcomes.pag
 *~
 mbbot.gemspec
+.emacs.desktop
+log/*log
