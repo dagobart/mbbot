@@ -14,7 +14,7 @@ class MicroBlogBotRunner
   end
 
   # start and run bot:
-  def run
+  def run(dynamically_adapt_polling_frequency = true)
     first_run = true
 
     begin
@@ -24,7 +24,7 @@ class MicroBlogBotRunner
       end
 
         # main bot run loop:
-        @bot.operate(@waittime, true)
+        @bot.operate(@waittime, dynamically_adapt_polling_frequency)
 
     rescue @handable_errors => e
       handle_error(e); retry
