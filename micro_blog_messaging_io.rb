@@ -118,16 +118,17 @@ class MicroBlogMessagingIO
               # twitter.com as they replaced replies by mentions.
 
     return messages_stream.first.id.to_i
-  end      # ^^^ sometimes (?) returns "warning: Object#id will be deprecated; use Object#object_id"
+  end      # ^^^ sometimes (?) returns "warning: Object#id will be deprecated; use Object#object_id"; maybe caused by a get_latest_messages()
 
-  def now_current_message_ids
+  def now_current_message_ids(
     message_types = @message_type__message_stream_type.keys +
                     [:incoming_DMs, :mentions, :replies]
+                             )
 
       msg_ids = Hash.new
-      message_types.each do |key|
-        msg_ids[key] = now_current_message_id(key)
-      end
+      message_types.each do |key| # fixme: does exist a shortcut for this
+        msg_ids[key] = now_current_message_id(key) #  kind of construct?
+      end                                          #  Like map() or something?
 
     return msg_ids
   end
@@ -143,13 +144,16 @@ class MicroBlogMessagingIO
     [:public_timeline,
      :mentions, :replies,
      :own_timeline, :friends_timeline].each do |msg_type|
-      @latest_messages[msg_type.to_s][service_in_use] = now_current_public_message_id
+      @latest_messages[msg_type.to_s][service_in_use] = 
+                                                   now_current_public_message_id
     end
 
     @latest_messages[:incoming_DMs.to_s][service_in_use] =
-                                                now_current_message_id(:incoming_DMs)
+                                           now_current_message_id(:incoming_DMs)
     # puts @latest_messages.pretty_inspect; exit
   end # fixme: add tests
+  # fixme: if possible, reduce number of needed µB service GETs to also
+  #        reduce chance to get (temp) barred from the µB service
 
   def cut_to_tweet_length(msg)
     return ( (msg.length > 140) ? "#{ msg[0, 136] }..." : msg )
@@ -451,10 +455,16 @@ class MicroBlogMessagingIO
     msgs = []
     latest_message_id = @latest_messages[type.to_s][@connector.service_in_use]
 
-    # FIXME: next instruction causes a whole lot of GETs, which in turn makes
-    #        us run into the Twitter traffic limit. --> reduce number of GETs
-    #        performed
-    message_ids_current_prior_to_catching_up = self.now_current_message_ids
+    # fixme: next instruction caused a whole lot of GETs, which in turn made
+    #        us run into the Twitter traffic limit. --> wrapped method call
+    #        into an +if+. Is it better now?
+    if perform_latest_message_id_update then
+      message_ids_current_prior_to_catching_up = 
+        self.now_current_message_ids((type == :replies) ? 
+                                       [type, :mentions] : [type])
+    end
+    # FIXME: why do we ask the µB service at all (and once a poll at that too)?
+    #        why aren't we caching locally?
 
       message_stream_type = @message_type__message_stream_type[type]
 
