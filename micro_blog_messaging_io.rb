@@ -44,8 +44,8 @@ class MicroBlogMessagingIO
     @prev_outgoing_post = ''
 
     # fixme:
-    # since by ow we're using a dbm file anyways, why keep persistig the
-    # latest messages IDs in that yaml fileat all?
+    # since by now we're using a dbm file anyways, why keep persistig the
+    # latest messages IDs in that yaml file at all?
     # when channging this, add an update script that takes the yaml file IDs
     # and puts them into the dbm
     # also, add an install script. That could perform the necessary patching
@@ -468,6 +468,7 @@ class MicroBlogMessagingIO
 
       message_stream_type = @message_type__message_stream_type[type]
 
+      # fixme: document this big +if+
       if   message_stream_type then
            msgs = process_timeline_messages(
 #                    @connection.timeline(message_stream_type, # replacement
