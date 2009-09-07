@@ -25,8 +25,10 @@ class MicroBlogShadow < MicroBlogBot
           "Alternatively, just interrupt it using C-C/^C or other means", 
           false, true, [:own_timeline])
 
+    # the following command enables MicroBlogShadow's parent, MicroBlogBot,
+    # to shutdown upon a +shutdown+ issued from within the shadowed account:
     @supervisor = @bot_name
-
+ 
     # void some variables initialized by super class:
     @bot_commands = { }
   end
