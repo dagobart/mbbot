@@ -114,13 +114,16 @@ class MicroBlogBot
   #
   # Also, the delta calculation causes lots of traffic. Did the µB service
   # come up with an easier way in the meantime yet?
-  def catch_up_with_followers
+  def catch_up_with_followers(enforce = false)
     welcome_message = "Welcome! Thanks for the follow! Send '@#{@bot_name}" +
-                      " help' for help. You can DM me too! Note: I'm not" +
-                      " always online."
+                      ' help\' for help. You can DM me too! Note: I\'m not' +
+                      ' always online.'
 
-    # welcome new followers:
-    @friending.new_followers.each do |new_follower|
+    # 'befriend' the new followers:
+    results = @friending.catch_up_with_followers(enforce)
+
+    # now welcome new followers:
+    results['new_followers'].each do |new_follower|
       DBM.open('followerwelcomes') do  |db| 
         if ((!db[new_follower]) || (db[new_follower].length == 0)) then
           db[new_follower] = DateTime.now.to_s
@@ -135,9 +138,6 @@ class MicroBlogBot
         end
       end
     end
-
-    # actually 'befriend' the new followers:
-    @friending.catch_up_with_followers
   end # FIXME: + add test
       # fixme: maybe this would be better put into the friending class, with
       #        an optional welcome string

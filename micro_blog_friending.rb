@@ -33,8 +33,10 @@ class MicroBlogFriending
 
   # +collected_messages+ is intended to ease testing [of this
   # method]:
-  def catch_up_with_followers
+  def catch_up_with_followers(enforce = false)
     collected_messages = ''
+    new_followers  =  new_followers(enforce)
+    lost_followers = lost_followers(enforce)
 
     # follow back everyone we don't [follow back] yet:
     new_followers.each do |follower_screen_name|
@@ -78,7 +80,10 @@ class MicroBlogFriending
       end
     end
 
-    return collected_messages
+    return {'collected_messages' => collected_messages, 
+                 'new_followers' => new_followers, 
+                'lost_followers' => lost_followers
+            }
   end # FIXME: return array of new followers/leavers instead, so we can do
       # anything with that info. Such as welcoming the new followers with
       # some 'howto' message,
@@ -104,6 +109,8 @@ class MicroBlogFriending
     end
   end
 
+  # FIXME: Twitter sometimes returns incorrect values, therefore, then no
+  #        method that relies on this here will work correctly either.
   def followers_delta
     user = @connection.user(@bot_name)
 
@@ -117,13 +124,13 @@ class MicroBlogFriending
   # Note: +user_names(@connection.followers - @connection.friends)+
   # does not work because of different object-in-memory-addresses
   # of follower/friend users, even if they have the same user ID.
-  def new_followers
+  def new_followers(enforce = false)
     # Originally, we calculated new followers and lost followers about once
     # a minute, without testing whether their number changed at all. At as
     # few as 20 followers this added up to about 350 MB traffic every day.
     # -- The prepended delta testing now avoids to request all the whole
     # user objects if the delta didn't change in the meantime.
-    if (followers_delta != 0) then
+    if enforce || (followers_delta != 0) then
       follower_names - friend_names
     else
       []
@@ -133,13 +140,13 @@ class MicroBlogFriending
   # Note: +user_names(@connection.friends - @connection.followers)+
   # does not work because of different object-in-memory-addresses
   # of follower/friend users, even if they have the same user ID.
-  def lost_followers
+  def lost_followers(enforce = false)
     # Originally, we calculated new followers and lost followers about once
     # a minute, without testing whether their number changed at all. At as
     # few as 20 followers this added up to about 350 MB traffic every day.
     # -- The prepended delta testing now avoids to request all the whole
     # user objects if the delta didn't change in the meantime.
-    if (followers_delta != 0) then
+    if enforce || (followers_delta != 0) then
       friend_names - follower_names
     else
       []
