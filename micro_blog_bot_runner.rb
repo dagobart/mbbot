@@ -90,6 +90,8 @@ private
     if (!USE_GEM_0_4_1 && (err == Twitter::CantConnect))       ||
        ( USE_GEM_0_4_1 && (err == Twitter::RateLimitExceeded)) then
       log('       Performing a heavy 900s delay to deal with exceeded limit')
+      @bot.notify_operator("Your bot @#{@bot.bot_name} got a" +
+                           ' Twitter::RateLimitExceeded.')
       sleep 900 # do a heavy delay when Twitter::RateLimitExceeded
     else
       sleep 60
