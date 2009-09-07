@@ -121,7 +121,7 @@ class MicroBlogConnector
     # However, when that happens, connecting actually is not possible. To
     # indicate that, we raise +Twitter::CantConnect+.
     # Apparently, the issue happens mostly on Twitter.
-    if !user then
+    if !user || user.empty? then
       raise Twitter::CantConnect, "Couldn't establish original connection." +
                                   " Try again in a couple of minutes"
     end
