@@ -186,13 +186,13 @@ class MicroBlogMessagingIO
     end
   end
 
-  def direct_msg(user_id, msg)
+  def direct_message_to(username, msg)
     if msg == @prev_outgoing_DM then
-      log("*** prevented dupe direct message:\n    #{ msg }")
+      log("*** prevented dupe direct message:\n" +
+          "    #{ msg }")
     else
-      username = @friending.username_by_id(user_id)
       public_version_of_message = 
-        cut_to_tweet_length( prepend_username_to_message( username, msg ) )
+        cut_to_tweet_length(prepend_username_to_message(username, msg))
 
       if USE_GEM_0_4_1 then # twitter gem 0.4.1 cannot DM
         # a +return+ must be w/i an if rather than in a +return ... if...+
@@ -214,6 +214,10 @@ class MicroBlogMessagingIO
         say(public_version_of_message)
       end
     end
+  end
+
+  def direct_msg(user_id, msg)
+    direct_message_to(@friending.username_by_id(user_id), msg)
   end
 
   def destroy(message_id)
