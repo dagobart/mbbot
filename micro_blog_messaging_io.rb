@@ -200,7 +200,7 @@ class MicroBlogMessagingIO
       end
 
       begin
-        @connection.direct_message_create(user_id, msg)
+        @connection.direct_message_create(username, msg)
 
           # help//support us learn about new developments in our relationships
           # to our followees:
