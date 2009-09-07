@@ -68,6 +68,13 @@ class MicroBlogBot
 
     puts @friending.follower_stats
 
+    # as Twitter doesn't return correct follower/friends values all the
+    # time, to catch up with new/lost followers, we need to take the lots
+    # of traffic generating way of catching up. -- Since that _is_ costing
+    # that lot of traffic, do it only once: here at start-up, and only if
+    # we're actually on Twitter:  
+    catch_up_with_followers(true) if !USE_GEM_0_4_1 && @perform_followers_catch_up
+
     return self
   end
 
@@ -154,17 +161,9 @@ class MicroBlogBot
 #      msg = @talk.say(progress_message)
 #      puts msg.id # so we could delete it manually any later
 #    end
-#
 
     min_waittime = waittime if dynamically_adapt_polling_frequency
     while (!@shutdown) do
-      # FIXME: do the catchup more rarely -- catching up costs >= 1 GET
-      # -- thus making us close in to the Twitter per user/per IP limits
-      # -- and a lot of traffic on our own side too. Mabe background the
-      # call and/or disband it from the incoming messages polling. What
-      # about workling+starling or similar?
-      catch_up_with_followers if @perform_followers_catch_up
-
       process_latest_received
       if dynamically_adapt_polling_frequency && messages_processed? then
         waittime = [(waittime + 1) / 2, min_waittime].max
@@ -176,6 +175,13 @@ class MicroBlogBot
       unless @shutdown
         @talk.log "[status] sleeping for #{ waittime } seconds...\n \b"
         sleep waittime
+
+        # FIXME: do the catchup more rarely -- catching up costs >= 1 GET
+        # -- thus making us close in to the Twitter per user/per IP limits
+        # -- and a lot of traffic on our own side too. Mabe background the
+        # call and/or disband it from the incoming messages polling. What
+        # about workling+starling or similar?
+        catch_up_with_followers if @perform_followers_catch_up
       end
     end
   end
