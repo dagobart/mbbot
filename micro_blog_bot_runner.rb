@@ -90,9 +90,15 @@ private
     if (!USE_GEM_0_4_1 && (err == Twitter::CantConnect))       ||
        ( USE_GEM_0_4_1 && (err == Twitter::RateLimitExceeded)) then
       log('       Performing a heavy 900s delay to deal with exceeded limit')
-      @bot.notify_operator("Your bot @#{@bot.bot_name} got a" +
-                           ' Twitter::RateLimitExceeded.')
-      sleep 900 # do a heavy delay when Twitter::RateLimitExceeded
+
+        # This -- to send out a message despite we just received a
+        # RateLimitExceeded -- is possible since that would be a POST. But
+        # the limitation (currently) applies only to GETs.
+        @bot.notify_operator("Your bot @#{@bot.bot_name} got a" +
+                             ' Twitter::RateLimitExceeded or a' +
+                             ' Twitter::CantConnect.')
+
+      sleep 900 # do a heavy delay on Twitter::RateLimitExceeded
     else
       sleep 60
     end
