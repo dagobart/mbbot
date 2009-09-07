@@ -165,14 +165,18 @@ class MicroBlogBot
     min_waittime = waittime if dynamically_adapt_polling_frequency
     while (!@shutdown) do
       process_latest_received
-      if dynamically_adapt_polling_frequency && messages_processed? then
-        waittime = [(waittime + 1) / 2, min_waittime].max
-      else
-        waittime = [waittime * 3 / 2, 300].min # fixme: remove hard-coded 300s
-      end                                      #      + hard-coded stepping too
 
       @talk.persist
       unless @shutdown
+        if dynamically_adapt_polling_frequency then
+          if messages_processed? then
+            waittime = [(waittime + 1) / 2, min_waittime].max
+          else
+            waittime = [waittime * 3 / 2, 300].min 
+            # fixme: remove hard-coded 300s and hard-coded stepping too
+          end
+        end
+
         @talk.log "[status] sleeping for #{ waittime } seconds...\n \b"
         sleep waittime
 
