@@ -25,6 +25,8 @@ class MicroBlogShadow < MicroBlogBot
           "Alternatively, just interrupt it using C-C/^C or other means", 
           false, true, [:own_timeline])
 
+    @supervisor = @bot_name
+
     # void some variables initialized by super class:
     @bot_commands = { }
   end
