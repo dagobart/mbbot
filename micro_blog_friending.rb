@@ -62,7 +62,7 @@ class MicroBlogFriending
           begin
             follow(follower_screen_name)
           rescue Twitter::TwitterError => e
-            puts "We couldn't follow #{follower_screen_name}: #{e.message}"
+            puts "We couldn't follow #{follower_screen_name}: #{e.message} (#{e.type})"
             # fixme: make use of log(), here, once it's available to
             #        low-level classes, like this one here, too
           end
