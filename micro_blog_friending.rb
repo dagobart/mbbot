@@ -21,15 +21,23 @@ class MicroBlogFriending
 
   attr_reader :connection
 
-  # for some unknown reason, this method causes Twitter to hiccup in reply,
-  # i.e. answer by: 400: Bad Request (Twitter::CantConnect)
   def follower_stats
-    "friends:        #{friend_names.join(', ')}\n" +
-    "followers:      #{follower_names.join(', ')}\n" +
-    "new followers:  #{new_followers.join(', ')}\n" +
-    "followers gone: #{lost_followers.join(', ')}"
-    # fixme: figure out why we have such a damn long pause past here
-  end
+    friend_names   = self.friend_names
+    follower_names = self.follower_names
+
+    # calculate the delta here instead by followers_delta() to
+    # avoid to redo the traffic just caused by friend_names()
+    # and follower_names:
+    followers_delta = follower_names.size - friend_names.size
+
+    "friends:         #{friend_names.join(', ')}\n" +
+    "followers:       #{follower_names.join(', ')}\n" +
+    "new followers:   #{new_followers.join(', ')}\n" +
+    "followers gone:  #{lost_followers.join(', ')}\n" +
+    "followers delta: #{followers_delta}"
+    # fixme: figure out why we have such a notable long pause past here
+  end  # fixme: for some unknown reason, this method causes Twitter to
+       # hiccup in reply, i.e. answer by: 400: Bad Request (Twitter::CantConnect)
 
   # +collected_messages+ is intended to ease testing [of this
   # method]:
@@ -111,15 +119,28 @@ class MicroBlogFriending
 
   # FIXME: Twitter sometimes returns incorrect values, therefore, then no
   #        method that relies on this here will work correctly either.
-  def followers_delta
+  #
+  # returns:
+  # = 0 on no change
+  # < 0 on lost followers
+  # > 0 on new followers
+  def followers_delta(enforce = false)
 #    user = @connection.user(@bot_name)
     user = @connector.user
 
-    # returns:
-    # = 0 on no change
-    # < 0 on lost followers
-    # > 0 on new followers
-    return (user.followers_count.to_i - user.friends_count.to_i)
+    # initialize result to a default value:
+    result = (user.followers_count.to_i - user.friends_count.to_i)
+
+    if (enforce && !USE_GEM_0_4_1) then
+      # overrule the result value only when we're on Twitter and
+      # decidedly want to get a correct result value. -- Note, to
+      # accept an incorrect result value for Twitter may be okay 
+      # since enforcing the correct value incurs a lot of traffic.
+      result = (follower_names.size - friend_names.size)
+    end
+
+    # return result:
+    return result
   end
 
   # Note: +user_names(@connection.followers - @connection.friends)+
