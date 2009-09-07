@@ -121,15 +121,18 @@ class MicroBlogConnector
     # However, when that happens, connecting actually is not possible. To
     # indicate that, we raise +Twitter::CantConnect+.
     # Apparently, the issue happens mostly on Twitter.
-    if !user || user.empty? then
-      raise Twitter::CantConnect, "Couldn't establish original connection." +
-                                  " Try again in a couple of minutes"
+    if !user || (user.class == String) then
+      raise USE_GEM_0_4_1 ? Twitter::CantConnect : Twitter::RateLimitExceeded,
+            'Couldn\'t establish original connection.' +
+            ' Try again in a couple of minutes.' 
     end
+    #puts user.inspect
 
+    @user = user
     @user_id = user.id
   end # we even could implement a reconnect()--but skip that now
 
-  attr_reader :connection, :user_id, :use_alternative_api, :service_in_use, :service_lacks, :peer_user, :supervisor, :username #, :password
+  attr_reader :connection, :user, :user_id, :use_alternative_api, :service_in_use, :service_lacks, :peer_user, :supervisor, :username #, :password
 
   def errmsg(error)
     if error == Twitter::CantConnect
