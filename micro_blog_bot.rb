@@ -140,7 +140,7 @@ class MicroBlogBot
           # deal with tries to follow back suspended users:
           rescue USE_GEM_0_4_1 ? [] : Twitter::NotFound
             log '[status] We couldn\'t welcome' + 
-                " #{follower_screen_name}: #{e.message}"
+                " #{new_follower}: #{e.message}"
           end
         end
       end
