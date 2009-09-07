@@ -112,7 +112,8 @@ class MicroBlogFriending
   # FIXME: Twitter sometimes returns incorrect values, therefore, then no
   #        method that relies on this here will work correctly either.
   def followers_delta
-    user = @connection.user(@bot_name)
+#    user = @connection.user(@bot_name)
+    user = @connector.user
 
     # returns:
     # = 0 on no change
