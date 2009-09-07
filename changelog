@@ -1,3 +1,9 @@
+== most notable improvements v0.2.5 to v0.2.6
+* since Twitter sometimes returns incorrect values on the number of
+  gained/lost followers, the bot now ensures that the catch-up with new
+  followers takes place [once] at least during the start up
+^ improved handling of attempts to follow banned users
+
 == most notable improvements v0.2.4 to v0.2.5
 * bot now dynamically adapts its [new incoming messages] polling frequency to
   the actual demand
