@@ -1,3 +1,29 @@
+== most notable improvements v0.2.4 to v0.2.5
+* bot now dynamically adapts its [new incoming messages] polling frequency to
+  the actual demand
+. on Twitter::RateLimitExceeded or Twitter::CantConnect,
+  * made the bot wrapper notify the bot's supervisor once the bot receives a
+    Twitter::RateLimitExceeded or Twitter::CantConnect, so they'll know about
+    the issue and can look into it. (This -- to send out a message despite we
+    just received a RateLimitExceeded -- is possible since that would be a
+    POST. But the limitation (currently) applies only to GETs.)
+  * increased the delay on Twitter::RateLimitExceeded exceptions to a quarter
+    of an hour
+^ improved catching up with followers so that the volume of traffic needed
+  now's greatly reduced
+^ greatly reduced the number of GETs performed "against" the µB service each
+  [new incoming messages] poll
+  . Reduced number of GETs implies reduced risk to get (temp) barred from a
+    µB service for over-using it. Therefore it's beneficial to keep our
+    number of GETs issued at the µB service as low as possible.
+^ direct messages now can be sent out by name too (not anymore only by user's
+  ID)
+. as twitter gem v0.6.15 introduced another number of issues, affixed the
+  required twitter gem version to either 0.4.1 (Identica) or
+  0.6.12 (Twitter)
+. prepared jeweler to roll mbbot a gem of its own
+
+
 == most notable improvements v0.2.3 to v0.2.4
 
 ^ simplified creating new bots to the extend that only two methods of a
