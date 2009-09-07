@@ -16,6 +16,7 @@ class MicroBlogFriending
   def initialize(connector)
     @connector = connector
     @connection = @connector.connection
+    @bot_name   = @connector.username
   end
 
   attr_reader :connection
@@ -189,7 +190,7 @@ class MicroBlogFriending
   end # fixme: + add test
 
   def is_friend_with?(user_screen_name)
-    @connection.friendship_exists?(@connector.username, user_screen_name)
+    @connection.friendship_exists?(@bot_name, user_screen_name)
   end # FIXME: + add test
 #
 #   def block_follower(user_screen_name)
