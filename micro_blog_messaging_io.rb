@@ -73,7 +73,7 @@ class MicroBlogMessagingIO
     end
   end
 
-  # +@connection.timeline+ doesn't exist for twitter gem > v0.6.12, therefore
+  # +@connection.timeline+ doesn't exist for twitter gem v0.6.12, therefore
   # we add a timeline() method of our own
   #
   # fixme: add an interfacing class that provides an interface between gems
@@ -85,6 +85,11 @@ class MicroBlogMessagingIO
   # core bot classes and leave such stuff to the interfacing class only
   # Particularly, I've got the twitter4r gem in mind and alternative µB
   # services such as what is used on github.
+  #
+  #
+  # fixme: I wonder whether a general access_web_api gem would make sense or
+  #        does exist already. that'd ease to get µB interfaces for identica
+  #        and other µB services too.
   def timeline(message_stream_type, options = {})
     if USE_GEM_0_4_1 then
       return @connection.timeline(message_stream_type, options)

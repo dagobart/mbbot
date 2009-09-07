@@ -40,7 +40,7 @@ USE_GEM_0_4_1 = USE_IDENTICA
 # If you want to, you could set +USE_GEM_0_4_1+ to +true+ even if
 # you'd set +USE_IDENTICA+ at the same time, so you could run your
 # bot on the 0.4.1 version of the twitter gem with Twitter.
-gem('twitter', USE_GEM_0_4_1 ? '=0.4.1' : '>0.4.1')
+gem('twitter', USE_GEM_0_4_1 ? '=0.4.1' : '=0.6.12')
 
 require 'twitter'
 # fixme: move the gem selection into a method. According to rurug, that'll work.

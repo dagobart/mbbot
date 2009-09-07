@@ -100,6 +100,23 @@ replies instead when using the 0.4.1 version of the twitter gem.
 This issue needs improvement. A helping hand here would be welcomed.
 
 
+Update:
+Twitter gem 0.6.15 requires +newgem+ which in turn demands a whole bunch of
+further gems. First, on a current Debian Lenny, using Debian's rubygems, the
+dependencies of the +newgem+ cannot get resolved (which renders twitter gem
+0.6.15 unsuitable for Debian Lenny). Second, that whole bunch of dependencies
+reminds of half a rails environment. Then, if we need all those gems anyways,
+then why not switch to the twitter4r (!) gem instead? Also, as John removed
+identica support from the twitter gem, another alternative would be to fork
+the twitter gem altogether to have support for identica too and no
+dependencies on gems that don't play with Debian Lenny's rubygems. That's
+going to be reviewed. However, for the time being, I put the bot framework's
+dependencies to twitter gem 0.4.1 for identica support and to 0.6.12 for
+Twitter support (and Lenny support also). If you want to help to resolve that
+issue, feel free to join. The repository lays at
+http://github.com/dagobart/mbbot/tree/master
+
+
 ==== Why developing against Identica is better
 
 Twitter restricts the number of accesses to 150 times _per_ _hour_. During
