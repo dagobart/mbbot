@@ -160,7 +160,9 @@ class MicroBlogFriending
     follower_array = []
     until num_followers < 100 do # fixme: why a loop? why not a each, map or inject?
       query = { "page" => counter }
-      follower_page = @connection.followers(query)
+      follower_page = @connection.followers(query).to_a
+      # fixme: twitter gem's friends() often does not return an array,
+      #        despite it should
       num_followers = follower_page.length
       follower_array = follower_array + follower_page
       counter = counter + 1
@@ -174,7 +176,9 @@ class MicroBlogFriending
     friend_array = []
     until num_friends < 100 do # fixme: why a loop? why not a each, map or inject?
       query = { "page" => counter }
-      friend_page = @connection.friends(query)
+      friend_page = @connection.friends(query).to_a
+      # fixme: twitter gem's friends() often does not return an array,
+      #        despite it should
       num_friends = friend_page.length
       friend_array = friend_array + friend_page
       counter = counter + 1
