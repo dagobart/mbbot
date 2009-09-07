@@ -113,7 +113,19 @@ class MicroBlogConnector
       end
 
     # finish initializing read-only variables:
-    user = @connection.user(@username) # ID determination apparently needs to be performed by two steps instead of one, otherwise the '.id' gets interpreted as a call of +Object.id+
+    user = @connection.user(@username)
+    
+    # sometimes, Twitter::HTTPAuth + Twitter::Base fails to return a connection,
+    # so then @connection apparently is +nil+, although the call
+    # +@connection.user(@username)+ doesn't crash (but returns +nil+ as well).
+    # However, when that happens, connecting actually is not possible. To
+    # indicate that, we raise +Twitter::CantConnect+.
+    # Apparently, the issue happens mostly on Twitter.
+    if !user then
+      raise Twitter::CantConnect, "Couldn't establish original connection." +
+                                  " Try again in a couple of minutes"
+    end
+
     @user_id = user.id
   end # we even could implement a reconnect()--but skip that now
 
