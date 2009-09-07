@@ -25,19 +25,32 @@ class MicroBlogFriending
     friend_names   = self.friend_names
     follower_names = self.follower_names
 
+    new_followers  = self.new_followers
+    new_followers  = nil if new_followers.size == 0
+    lost_followers = self.lost_followers
+    lost_followers = nil if lost_followers.size == 0
+
     # calculate the delta here instead by followers_delta() to
     # avoid to redo the traffic just caused by friend_names()
     # and follower_names:
     followers_delta = follower_names.size - friend_names.size
 
-    "friends:         #{friend_names.join(', ')}\n" +
-    "followers:       #{follower_names.join(', ')}\n" +
-    "new followers:   #{new_followers.join(', ')}\n" +
-    "followers gone:  #{lost_followers.join(', ')}\n" +
-    "followers delta: #{followers_delta}"
-    # fixme: figure out why we have such a notable long pause past here
+    result =
+      "friends:         #{friend_names.join(', ')}\n" +
+      "followers:       #{follower_names.join(', ')}\n" 
+    result += 
+      "new followers:   #{new_followers.join(', ')}\n"  if new_followers
+    result += 
+      "followers gone:  #{lost_followers.join(', ')}\n" if lost_followers
+    result += 
+      "followers delta: #{followers_delta}"
+
+    return result
   end  # fixme: for some unknown reason, this method causes Twitter to
-       # hiccup in reply, i.e. answer by: 400: Bad Request (Twitter::CantConnect)
+       #        hiccup in reply, i.e. answer by:
+       #        400: Bad Request (Twitter::CantConnect)
+       # fixme: figure out why we have such a notable long pause past
+       # calling this here method
 
   # +collected_messages+ is intended to ease testing [of this
   # method]:
