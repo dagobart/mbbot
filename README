@@ -7,7 +7,7 @@ services such as Twitter.com and Identi.ca.
 
 == How to make your own bot
 After you have set up the framework, it is just as easy as shown below to
-make your own micro-blogging bot. However, in order to make them run you 
+make your own micro-blogging bot. However, in order to make them run you
 need to set up the framework first. See sections +Setup+ and +Bot account
 data+ below.
 
@@ -22,7 +22,7 @@ data+ below.
 
 This is actual code taken from +sample_chatbot.rb+.
 
-=== Sample shadow bot 
+=== Sample shadow bot
 A starting point for building a user output augmenting bot or a gateway.
 
  require (File.join(File.dirname(__FILE__), '') + 'micro_blog_bot_runner')
@@ -32,7 +32,7 @@ A starting point for building a user output augmenting bot or a gateway.
      screen_name = msg['screen_name']
         msg_text = msg['text'];
        timestamp = msg['created_at']; timestamp.gsub!(/ \+0000/, '')
- 
+
      @talk.log "received '#{msg_text}' by @#{screen_name} at #{timestamp}"
    end
  end
@@ -40,7 +40,7 @@ A starting point for building a user output augmenting bot or a gateway.
  MicroBlogBotRunner.new(MicroBlogShadow.new).run
 
 === Launch & Shutdown of the sample bots
-Copy above sample code to a text file or just take the pre-packed 
+Copy above sample code to a text file or just take the pre-packed
 +sample_chat.rb+ and run it from the command line:
 
 	$ ruby sample_chatbot.rb
@@ -85,8 +85,8 @@ The bot framework relies on the twitter gem. Up to version 0.4.1 the gem
 support both, Twitter and Identica. By version 0.5.0 the gem dropped Identica
 support.
 
-Though, as Twitter itself struggles more often but Identica does, it's 
-usually more painless to develop a bot against Identica first, then switch 
+Though, as Twitter itself struggles more often but Identica does, it's
+usually more painless to develop a bot against Identica first, then switch
 to Twitter and enforce that the bot runs well against Twitter too.
 
 To achieve that, the bot framework currently makes use of two different
@@ -102,28 +102,28 @@ This issue needs improvement. A helping hand here would be welcomed.
 
 ==== Why developing against Identica is better
 
-Twitter restricts the number of accesses to 150 times _per_ _hour_. During 
-development this is rather inconvenient when you need to try things out. 
+Twitter restricts the number of accesses to 150 times _per_ _hour_. During
+development this is rather inconvenient when you need to try things out.
 Identica's restrictions are more relaxed.
 
-Even more, as Identica is free software, you can install your own Identica 
-server and develop against _that_. Despite I couldn't find a suitable 
-installation howto for Debian, I assume that by that you could drop the 
+Even more, as Identica is free software, you can install your own Identica
+server and develop against _that_. Despite I couldn't find a suitable
+installation howto for Debian, I assume that by that you could drop the
 messages-per-hour restriction to zero.
 
 
 === Patching gem twitter 0.4.1 and 0.6.12
 
 During development I stumbled upon some minor flaws in the underlying twitter
-gem the micro-blogging bot uses, in both versions used by the bot, 0.4.1 and 
-0.6.12. While the flaws are there, the bot may not work properly in all its 
+gem the micro-blogging bot uses, in both versions used by the bot, 0.4.1 and
+0.6.12. While the flaws are there, the bot may not work properly in all its
 aspects.
 
 There are different issues with and patches for twitter gem 0.4.1 and twitter
 gem 0.6.12.
 
-As we currently rely on the specific gem versions, I include patches for them. 
-So, prior to launching the bot you need to make sure the respective patch is 
+As we currently rely on the specific gem versions, I include patches for them.
+So, prior to launching the bot you need to make sure the respective patch is
 in place. You do so by actually patching the Twitter gem.
 
 
@@ -142,7 +142,7 @@ And that's it for 0.4.1
 ==== Patching gem twitter 0.6.12
 
 In patches/gems/twitter-0.6.12/lib/twitter/ there is a file named
-add_public_timeline_method.patch. That is the patch. You apply it by copying 
+add_public_timeline_method.patch. That is the patch. You apply it by copying
 it to where the twitter gem's base.rb file resides (helpful: locate
 twitter-0.6.12/lib/twitter/). Then you execute this command:
 
@@ -276,7 +276,7 @@ first, though I did just that sometimes, by continuing to develop, time
 passed..)
 
 However, to shortcut this, I introduced a +SERVICE_IS_AVAILABLE+ hash. Just
-set +twitter+ to +false+ once it nags again, and test against Identica only 
+set +twitter+ to +false+ once it nags again, and test against Identica only
 for a while. Just make sure you re-enable it later and run your tests
 against Twitter too.
 
@@ -290,28 +290,28 @@ against Twitter too.
 * The chat bot can deal with public @replies and private direct messages. It
   answers by direct messages whenever possible. -- Where direct messages are
   not possible it uses @replies.
-* In case our bot gets followed by a user who has protected their updates (or 
-  by a user whose account got disabled by the µB service's admins between 
-  them following the bot and the bot following them back) the bot will handle 
+* In case our bot gets followed by a user who has protected their updates (or
+  by a user whose account got disabled by the µB service's admins between
+  them following the bot and the bot following them back) the bot will handle
   the issue appropriately.
 * All base classes are diligently tested and girdled with tests, therefore if
   modifications are going to break anything, you will know quickly.
-  . Because of major improvements, as of Aug 11, 2009 the tests are 
+  . Because of major improvements, as of Aug 11, 2009 the tests are
     incomplete now.
 
 
 = Known shortcomings
 
-* Although the bot is optimized for running permanently, there may be 
-  unhandled exceptions (i.e. crashes) that require manual restart. Sending a 
+* Although the bot is optimized for running permanently, there may be
+  unhandled exceptions (i.e. crashes) that require manual restart. Sending a
   notification once a crash occurs would be nice. Feel free to add such.
-* There is no way to delete messages. Hence, messages generated during tests 
+* There is no way to delete messages. Hence, messages generated during tests
   don't get cleaned up afterwards. This could annoy followers of your bot.
   (My bot lost some of them due to test messages.) However, you could take
   your chances and run tests only when your bot's followers are offline.
 * It's untested what might happen once a followee decides to change their
   nick name.
-* Because of those major improvements applied in July/August 2009, as of 
+* Because of those major improvements applied in July/August 2009, as of
   Aug 11, 2009 the tests are rather incomplete now.
 * All the class files are full of +FIXME+s and minor +fixme+s, and need
   tidying up.
@@ -324,7 +324,7 @@ be delighted if you'd go over the code and fixed some FIXMEs or updated
 some of the tests.
 
 Also, if you'd like to contribute some code of your own feel free to do
-so. Also, adding documentation to de code would be greatly appreciated. 
+so. Also, adding documentation to de code would be greatly appreciated.
 
 Especially grateful I'd be if you'd roll the bot framework files to a
 gem.
@@ -335,6 +335,6 @@ Looking forward to hear from you. Just send an e-mail.
 
 = Authors
 
-This micro-blogging chat bot mini-framework was developed in January/February 
-and July/August 2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com> aka 
+This micro-blogging chat bot mini-framework was developed in January/February
+and July/August 2009 by Wolfram R. Sieber <Wolfram.R.Sieber@GMail.com> aka
 @dagobart aka A.F. Contributions were added by David Sifry in August 2009.
