@@ -150,10 +150,12 @@ class MicroBlogBot
 
     min_waittime = waittime if dynamically_adapt_polling_frequency
     while (!@shutdown) do
-      #catch_up_with_followers if @perform_followers_catch_up
-      #  # fixme: figure out why we have such a damn long pause past here
-      #
-      # FIXME: do the catchup more rarely -- catching up costs a lot of traffic
+      # FIXME: do the catchup more rarely -- catching up costs >= 1 GET
+      # -- thus making us close in to the Twitter per user/per IP limits
+      # -- and a lot of traffic on our own side too. Mabe background the
+      # call and/or disband it from the incoming messages polling. What
+      # about workling+starling or similar?
+      catch_up_with_followers if @perform_followers_catch_up
 
       process_latest_received
       if dynamically_adapt_polling_frequency && messages_processed? then

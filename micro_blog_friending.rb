@@ -27,6 +27,7 @@ class MicroBlogFriending
     "followers:      #{follower_names.join(', ')}\n" +
     "new followers:  #{new_followers.join(', ')}\n" +
     "followers gone: #{lost_followers.join(', ')}"
+    # fixme: figure out why we have such a damn long pause past here
   end
 
   # +collected_messages+ is intended to ease testing [of this
@@ -44,8 +45,8 @@ class MicroBlogFriending
           db[follower_screen_name] = DateTime.now.to_s
 
           puts message
-          # fixme: make use of log(), here, once it's available to
-          #        low-level classes, like this one here, too
+          # fixme: make use of log(), here, once log() is available
+          #        to low-level classes, like this one here, too
 
           begin
             follow(follower_screen_name)
@@ -67,8 +68,8 @@ class MicroBlogFriending
             (db[follower_screen_name].length == 0)) then
           db[follower_screen_name] = nil
           puts message
-          # fixme: make use of log(), here, once it's available to
-          #        low-level classes, like this one here, too
+          # fixme: make use of log(), here, once log() is available
+          #        to low-level classes, like this one here, too
           # fixme: just like in catch_up_with_followers(), make use
           #        of rescue, here too
           leave(follower_screen_name)
@@ -102,18 +103,46 @@ class MicroBlogFriending
     end
   end
 
+  def followers_delta
+    user = @connection.user(@bot_name)
+
+    # returns:
+    # = 0 on no change
+    # < 0 on lost followers
+    # > 0 on new followers
+    return (user.followers_count.to_i - user.friends_count.to_i)
+  end
+
   # Note: +user_names(@connection.followers - @connection.friends)+
   # does not work because of different object-in-memory-addresses
   # of follower/friend users, even if they have the same user ID.
   def new_followers
-    follower_names - friend_names
+    # Originally, we calculated new followers and lost followers about once
+    # a minute, without testing whether their number changed at all. At as
+    # few as 20 followers this added up to about 350 MB traffic every day.
+    # -- The prepended delta testing now avoids to request all the whole
+    # user objects if the delta didn't change in the meantime.
+    if (followers_delta != 0) then
+      follower_names - friend_names
+    else
+      []
+    end
   end
 
   # Note: +user_names(@connection.friends - @connection.followers)+
   # does not work because of different object-in-memory-addresses
   # of follower/friend users, even if they have the same user ID.
   def lost_followers
-    friend_names - follower_names
+    # Originally, we calculated new followers and lost followers about once
+    # a minute, without testing whether their number changed at all. At as
+    # few as 20 followers this added up to about 350 MB traffic every day.
+    # -- The prepended delta testing now avoids to request all the whole
+    # user objects if the delta didn't change in the meantime.
+    if (followers_delta != 0) then
+      friend_names - follower_names
+    else
+      []
+    end
   end
 
   def follower_names

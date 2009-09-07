@@ -455,9 +455,6 @@ class MicroBlogMessagingIO
     msgs = []
     latest_message_id = @latest_messages[type.to_s][@connector.service_in_use]
 
-    # fixme: next instruction caused a whole lot of GETs, which in turn made
-    #        us run into the Twitter traffic limit. --> wrapped method call
-    #        into an +if+. Is it better now?
     if perform_latest_message_id_update then
       message_ids_current_prior_to_catching_up = 
         self.now_current_message_ids((type == :replies) ? 
