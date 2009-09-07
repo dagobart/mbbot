@@ -29,7 +29,6 @@ class MicroBlogBotRunner
     rescue @handable_errors => e
       handle_error(e); retry
     end
-    # fixme: modified error handling is not yet thoroughly tested
 
     @bot.shutdown
   end
@@ -97,7 +96,7 @@ private
         @bot.notify_operator("Your bot @#{@bot.bot_name} got a" +
                              ' Twitter::RateLimitExceeded or a' +
                              ' Twitter::CantConnect.')
- 
+
       sleep 900 # do a heavy delay on Twitter::RateLimitExceeded
     else
       sleep 60
