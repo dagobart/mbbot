@@ -71,6 +71,8 @@ class MicroBlogBot
     return self
   end
 
+  attr_reader :bot_name
+
   def handle_help_command(predicate,msg)
     help_commands = {
       'about' => "Try 'help' for help. Add other Help text here. You can" +
@@ -303,6 +305,11 @@ class MicroBlogBot
     # bot, so every other instance of the bot can pick up that status and
     # start from there rather than reprocessing all the messages yet
     # processed by other instances of the bot. 
+  end
+
+  def notify_operator(msg)
+    @talk.log "notifying operator (#{@supervisor}):"
+    @talk.direct_message_to(@supervisor, msg)
   end
 end
 

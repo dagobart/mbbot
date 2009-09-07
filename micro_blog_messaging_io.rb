@@ -218,7 +218,7 @@ class MicroBlogMessagingIO
 
   def direct_msg(user_id, msg)
     direct_message_to(@friending.username_by_id(user_id), msg)
-  end
+  end # fixme: method not yet tested
 
   def destroy(message_id)
     @connection.destroy(message_id)
