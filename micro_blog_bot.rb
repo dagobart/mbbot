@@ -125,7 +125,13 @@ class MicroBlogBot
         if ((!db[new_follower]) || (db[new_follower].length == 0)) then
           db[new_follower] = DateTime.now.to_s
           @talk.log "[status] Sending Welcome message to  #{new_follower}!"
-          @talk.direct_msg(new_follower, welcome_message)
+          begin
+            @talk.direct_msg(new_follower, welcome_message)
+          # deal with tries to follow back suspended users:
+          rescue USE_GEM_0_4_1 ? [] : Twitter::NotFound
+            log '[status] We couldn\'t welcome' + 
+                " #{follower_screen_name}: #{e.message}"
+          end
         end
       end
     end
@@ -135,7 +141,7 @@ class MicroBlogBot
   end # FIXME: + add test
       # fixme: maybe this would be better put into the friending class, with
       #        an optional welcome string
-      # FIXME: wait.. did dsifry add friending functionality here in the
+      # fixme: wait.. do we have friending functionality here in the
       #        bot itself? Would be the wrong class for such.
 
   # +waittime+: Twitter suggests 60s: http://is.gd/j15G -- 15s gets us
