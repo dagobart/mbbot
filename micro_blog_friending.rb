@@ -192,7 +192,7 @@ class MicroBlogFriending
     num_followers = 100
     counter = 1
     follower_array = []
-    until num_followers < 100 do # fixme: why a loop? why not a each, map or inject?
+    until num_followers < 100 do # fixme: why a loop? why not a each, map, collect or inject?
       query = { "page" => counter }
       follower_page = @connection.followers(query).to_a
       # fixme: twitter gem's friends() often does not return an array,
@@ -208,7 +208,7 @@ class MicroBlogFriending
     num_friends = 100
     counter = 1
     friend_array = []
-    until num_friends < 100 do # fixme: why a loop? why not a each, map or inject?
+    until num_friends < 100 do # fixme: why a loop? why not a each, map, collect or inject?
       query = { "page" => counter }
       friend_page = @connection.friends(query).to_a
       # fixme: twitter gem's friends() often does not return an array,
@@ -222,7 +222,10 @@ class MicroBlogFriending
   # fixme: if possible, join friend_names() with follower_names()
 
   def user_names(users)
-    users.collect { |user| user.screen_name }
+    users.collect { |user| (user.class == String) ? '' : user.screen_name }
+    # fixme: currently, it happens all the time that +users+ contain strings
+    # rather than Twitter::User objects only. Fix that! This here '? :'
+    # construct is nothing more but a foul hack
   end
 
   # returns a User object for the user with the given +user_id+
